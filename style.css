@@ -1,0 +1,197 @@
+/* ==== RESET & BASE ==================================== */
+*, *::before, *::after 
+{
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body 
+{
+    font-family: Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #1a1a1a;
+    background: #f5f5f3;
+    padding: 2rem 1.5rem;
+}
+
+/* ==== LAYOUT ========================================== */
+.wrap 
+{
+    max-width: 960px;
+    margin: 0 auto;
+}
+
+/* ==== TYPOGRAPHY ====================================== */
+h2 
+{
+    font-size: 22px;
+    font-weight: 500;
+    margin-bottom: 1.5rem;
+    color: #1a1a1a;
+}
+
+h3 
+{
+    font-size: 13px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #888;
+    margin-bottom: 0.75rem;
+}
+
+/* ==== CONTROLS ROW ==================================== */
+.controls 
+{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+}
+
+/* ==== SELECT DROPDOWN ================================= */
+select 
+{
+    height: 36px;
+    padding: 0 12px;
+    border: 1px solid #d0cfc8;
+    border-radius: 8px;
+    background: #fff;
+    color: #1a1a1a;
+    font-size: 14px;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+select:focus 
+{
+    border-color: #3a8ede;
+    box-shadow: 0 0 0 3px rgba(58, 142, 222, 0.18);
+}
+
+/* ==== BUTTONS ========================================= */
+button 
+{
+    height: 36px;
+    margin: 4px;
+    padding: 8px 14px;
+    border: 1px solid #d0cfc8;
+    border-radius: 8px;
+    background: transparent;
+    color: #1a1a1a;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+button:hover 
+{
+    background: #ebebea;
+    border-color: #bbb;
+}
+
+button:active 
+{
+    transform: scale(0.98);
+}
+
+/* Small "View" button inside table cells */
+td button 
+{
+    height: 28px;
+    padding: 0 12px;
+    font-size: 12px;
+}
+
+/* ==== RESULT CONTAINER ================================ */
+#result-container 
+{
+    background: #fff;
+    border: 1px solid #e0dfd8;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-top: 0.5rem;
+}
+
+#result-container p 
+{
+    padding: 1rem 1.25rem;
+    color: #888;
+    font-size: 14px;
+}
+
+/* ==== TABLE =========================================== */
+table 
+{
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    margin-top: 10px;
+}
+
+thead tr 
+{
+    background: #f5f5f3;
+}
+
+th 
+{
+    font-size: 13px;
+    font-weight: 500;
+    background: #4a90d9; 
+    color: white;
+    border-bottom: 1px solid #e0dfd8;
+    white-space: nowrap;
+}
+
+td, th 
+{ 
+    padding: 10px 14px; 
+    text-align: left; 
+}
+
+td 
+{
+    border-bottom: 1px solid #f0efe8;
+    color: #1a1a1a;
+}
+
+tbody tr:last-child td 
+{
+    border-bottom: none;
+}
+
+tr:nth-child(even) 
+{ 
+    background: #f2f2f2; 
+}
+
+tbody tr:hover 
+{
+    background: #fafaf8;
+}
+
+/* Overflow scroll for wide tables on small screens */
+.table-scroll 
+{
+    overflow-x: auto;
+}
+
+/* ==== LOADING / ERROR STATES ========================== */
+.loading-text 
+{
+    padding: 1rem 1.25rem;
+    color: #888;
+    font-size: 14px;
+}
+
+.error-text 
+{
+    padding: 1rem 1.25rem;
+    color: #c0392b;
+    font-size: 14px;
+}
