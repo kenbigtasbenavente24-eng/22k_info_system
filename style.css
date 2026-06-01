@@ -1,26 +1,36 @@
-/* ==== RESET & BASE ==================================== */
-*, *::before, *::after 
+/* ==== RESET & BASE =================================== */
+
+*,
+*::before,
+*::after
 {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
 }
 
-/* ==== LAYOUT =========================================== */
 
-.wrap 
-{
-    max-width: 960px;
-    margin: 0 auto;
-}
+/* ==== LAYOUT ========================================= */
 
 body
-{    
+{
     background: #f5f5f3;
     padding: 2rem 1.5rem;
 }
 
-/* ==== TYPOGRAPHY ======================================= */
+.wrap
+{
+    max-width: 870px;
+    margin: 0 auto;
+}
+
+.table-scroll
+{
+    overflow-x: auto;
+}
+
+
+/* ==== TYPOGRAPHY ===================================== */
 
 body
 {
@@ -34,9 +44,9 @@ h1
 {
     font-family: 'Montserrat', sans-serif;
     font-size: 34px;
-    font-weight: 750;
+    font-weight: 800;
+    color: #20252d;
     margin-bottom: 1rem;
-    color: #1a1a1a;
 }
 
 h2
@@ -50,26 +60,35 @@ h2
     margin-bottom: 0.75rem;
 }
 
-select, button
+table
+{
+    font-family: 'Roboto Mono', monospace;
+    color: #1a1a1a;
+}
+
+select,
+button
 {
     font-family: 'Roboto Mono', monospace;
     font-weight: 500;
-    color: #888;
-    align-items: center;
 }
 
-/* ==== CONTROLS ROW ==================================== */
-.controls 
+
+/* ==== CONTROLS ROW =================================== */
+
+.controls
 {
     display: flex;
     align-items: center;
-    gap: 10px;
     flex-wrap: wrap;
+    gap: 10px;
     margin-bottom: 1.5rem;
 }
 
-/* ==== SELECT DROPDOWN ================================= */
-select 
+
+/* ==== SELECT DROPDOWN ================================ */
+
+select
 {
     height: 36px;
     padding: 0 12px;
@@ -78,153 +97,113 @@ select
     background: #fff;
     color: #1a1a1a;
     font-size: 14px;
-    outline: none;
     cursor: pointer;
+    outline: none;
     transition: border-color 0.15s, box-shadow 0.15s;
 }
 
-select:focus 
+select:hover
+{
+    border-color: #bbb;
+}
+
+select:focus
 {
     border-color: #3a8ede;
     box-shadow: 0 0 0 3px rgba(58, 142, 222, 0.18);
 }
 
-/* ==== BUTTONS ========================================= */
-button 
+
+/* ==== BUTTONS — BASE ================================= */
+
+button
 {
     height: 36px;
-    margin: 4px;
-    padding: 8px 14px;
-    border: 1px solid #d0cfc8;
+    padding: 0 14px;
+    border: 1px solid transparent;
     border-radius: 8px;
     background: transparent;
-    font-size: 14px;
+    font-size: 13px;
     cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
-button:hover 
-{
-    background: #ebebea;
-    border-color: #bbb;
-}
-
-button:active 
+button:active
 {
     transform: scale(0.98);
 }
 
-/* Small "View" button inside table cells */
-td button 
-{
-    height: 28px;
-    padding: 0 12px;
-    font-size: 12px;
-}
 
-/* ==== RESULT CONTAINER ================================ */
-#result-container 
-{
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    overflow: hidden;
-    margin-top: 0.5rem;
-}
+/* ==== BUTTONS — TABLE CELL "VIEW" ==================== */
 
-#result-container p 
+td button
 {
-    padding: 1rem 1.25rem;
-    color: #94a3b8;
-    font-size: 13px;
-}
-
-/* ==== TABLE =========================================== */
-table 
-{
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13.5px;
-}
-
-thead tr 
-{
-    background: #f8fafc;
-    border-bottom: 1px solid #e2e8f0;
-}
-
-th 
-{
-    padding: 11px 16px;
-    text-align: left;
+    height: 26px;
+    padding: 0 10px;
     font-size: 11.5px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: #64748b;
-    background: #f8fafc;
-    white-space: nowrap;
-    border-bottom: 1px solid #e2e8f0;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    border-radius: 6px;
 }
 
-td, th 
-{ 
-    padding: 13px 16px; 
-    text-align: left; 
-}
-
-td 
+td button:hover
 {
-    border-bottom: 1px solid #f1f5f9;
-    color: #1e293b;
-    vertical-align: middle;
+    background: #e2e8f0;
+    border-color: #cbd5e1;
 }
 
-tbody tr:last-child td 
+/* ==== BUTTONS — DELETE & UPDATE (action buttons) ===== */
+
+/* Delete — red tone */
+button[onclick*="handleDelete"] 
 {
-    border-bottom: none;
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: #b91c1c;
 }
 
-tbody tr:hover 
+button[onclick*="handleDelete"]:hover 
 {
-    background: #f8fafc;
+    background: #fee2e2;
+    border-color: #f87171;
 }
 
-/* Overflow scroll for wide tables on small screens */
-.table-scroll 
+/* Update — amber/blue tone */
+button[onclick*="handleUpdate"] 
 {
-    overflow-x: auto;
+    background: #eff6ff;
+    border-color: #93c5fd;
+    color: #1d4ed8;
 }
 
-/* ==== LOADING / ERROR STATES ========================== */
-.loading-text 
+button[onclick*="handleUpdate"]:hover 
 {
-    padding: 1rem 1.25rem;
-    color: #888;
-    font-size: 14px;
+    background: #dbeafe;
+    border-color: #60a5fa;
 }
 
-.error-text 
+/* ==== TABLE TABS / NAV =============================== */
+
+.table-nav
 {
-    padding: 1rem 1.25rem;
-    color: #c0392b;
-    font-size: 14px;
-}
-
-/* ==== TABLE TABS ================================== */
-.table-nav {
     display: flex;
-    gap: 6px;
     flex-wrap: wrap;
+    gap: 6px;
     margin-bottom: 1.25rem;
     padding-bottom: 0.75rem;
     border-bottom: 1px solid #e2e8f0;
     overflow-x: auto;
 }
 
-.tab-btn {
+.tab-btn
+{
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     height: 34px;
     padding: 0 14px;
+    margin: 0;
     border: 1px solid #d0cfc8;
     border-radius: 8px;
     background: #fff;
@@ -232,26 +211,237 @@ tbody tr:hover
     font-family: 'Inter', sans-serif;
     font-size: 13px;
     font-weight: 500;
-    cursor: pointer;
     white-space: nowrap;
-    transition: all 0.15s;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    margin: 0;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
-.tab-btn:hover {
+.tab-btn:hover
+{
     background: #f1f5f9;
     border-color: #bbb;
 }
 
-.tab-btn.active {
+.tab-btn.active
+{
     background: #1e293b;
     border-color: #1e293b;
     color: #fff;
 }
 
-.tab-icon {
+
+/* ==== RESULT CONTAINER =============================== */
+
+#result-container
+{
+    background: #fff;
+    border: 1px solid #e0dfd8;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-top: 0.5rem;
+}
+
+#result-container p
+{
+    padding: 1rem 1.25rem;
+    color: #888;
+    font-size: 14px;
+}
+
+
+/* ==== TABLE ========================================== */
+
+table
+{
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+thead tr
+{
+    border-bottom: 1px solid #e2e8f0;
+}
+
+th
+{
+    padding: 11px 16px;
+    text-align: left;
     font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #fff;
+    background: #38414e;
+    white-space: nowrap;
+    border-bottom: 1px solid #e0dfd8;
+}
+
+td,
+th
+{
+    padding: 11px 16px;
+    text-align: left;
+}
+
+td
+{
+    border-bottom: 1px solid #f1f5f9;
+    color: #1e293b;
+    vertical-align: middle;
+}
+
+tbody tr:last-child td
+{
+    border-bottom: none;
+}
+
+tbody tr:hover
+{
+    background: #f8fafc;
+}
+
+
+/* ==== LOADING & ERROR STATES ========================= */
+
+.loading-text
+{
+    padding: 1rem 1.25rem;
+    color: #888;
+    font-size: 14px;
+}
+
+.error-text
+{
+    padding: 1rem 1.25rem;
+    color: #c0392b;
+    font-size: 14px;
+}
+
+
+/* ==== MODAL ========================================== */
+
+.modal-backdrop
+{
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.modal-content
+{
+    background: #fff;
+    padding: 24px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 450px;
+    text-align: center;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    animation: fadeIn 0.15s ease-out;
+}
+
+@keyframes fadeIn
+{
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.modal-content h3
+{
+    font-family: 'Montserrat', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 8px;
+}
+
+.modal-content hr
+{
+    border: 0;
+    border-top: 1px solid #e2e8f0;
+    margin-bottom: 16px;
+}
+
+#modalDetails
+{
+    text-align: left;
+    margin: 0 0 16px;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 12.5px;
+    white-space: pre-wrap;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 10px 12px;
+    color: #334155;
+    line-height: 1.8;
+}
+
+.modal-buttons
+{
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+
+/* ==== MODAL BUTTONS — VARIANTS ======================= */
+
+.modal-btn
+{
+    width: 100%;
+    height: 40px;
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.modal-btn.warning
+{
+    background: #eff6ff;
+    border-color: #93c5fd;
+    color: #1d4ed8;
+}
+
+.modal-btn.warning:hover
+{
+    background: #dbeafe;
+    border-color: #60a5fa;
+}
+
+.modal-btn.danger
+{
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: #b91c1c;
+}
+
+.modal-btn.danger:hover
+{
+    background: #fee2e2;
+    border-color: #f87171;
+}
+
+.modal-btn.cancel
+{
+    background: #f8fafc;
+    border-color: #e2e8f0;
+    color: #64748b;
+}
+
+.modal-btn.cancel:hover
+{
+    background: #f1f5f9;
+    border-color: #cbd5e1;
 }
