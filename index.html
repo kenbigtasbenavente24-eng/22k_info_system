@@ -4,14 +4,26 @@
     <meta charset="UTF-8">
     <title>My App</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
 
-<h1>22k Inventory Management System</h1>
+<header class="site-header">
+    <div class="logo-dot">22</div>
+    <h1>Inventory Management System</h1>
+ 
+    <!-- Main nav: Tables | Reports -->
+    <nav class="site-nav">
+        <button class="site-nav-btn active" id="navTables"  onclick="showSection('tables')">Tables</button>
+        <button class="site-nav-btn"        id="navReports" onclick="showSection('reports')">Reports</button>
+    </nav>
+</header>
 
 <div class="wrap">
-
-    <h1>Greetings!</h1>
+      <div id="section-tables">
+        <div class="page-title">
+            <h2>Greetings!</h2>
+        </div>
 
     <!-- =====================================================
         SECTION: SELECT
@@ -23,12 +35,18 @@
     ====================================================== -->
 
     <div class="table-nav">
-        <button class="tab-btn active" data-query="customer"      onclick="switchTable(this, 'customer')">Customer List</button>
-        <button class="tab-btn"        data-query="orders"        onclick="switchTable(this, 'orders')">Orders List</button>
-        <button class="tab-btn"        data-query="payment"       onclick="switchTable(this, 'payment')">Payment List</button>
-        <button class="tab-btn"        data-query="product"       onclick="switchTable(this, 'product')">Product Catalog</button>
-        <button class="tab-btn"        data-query="supplier"      onclick="switchTable(this, 'supplier')">Suppliers</button>
-        <button class="tab-btn"        data-query="deliverystock" onclick="switchTable(this, 'deliverystock')">Delivery Stock</button>
+        <button class="tab-btn active" data-query="customer"      onclick="switchTable(this, 'customer')">
+            <i class="fa-solid fa-address-book"></i>Customer List</button>
+        <button class="tab-btn"        data-query="orders"        onclick="switchTable(this, 'orders')">
+            <i class="fa-solid fa-shopping-cart"></i>Orders List</button>
+        <button class="tab-btn"        data-query="payment"       onclick="switchTable(this, 'payment')">
+            <i class="fa-solid fa-credit-card"></i>Payment List</button>
+        <button class="tab-btn"        data-query="product"       onclick="switchTable(this, 'product')">
+            <i class="fa-solid fa-box-open"></i>Product Catalog</button>
+        <button class="tab-btn"        data-query="supplier"      onclick="switchTable(this, 'supplier')">
+            <i class="fa-solid fa-truck"></i>Suppliers</button>
+        <button class="tab-btn"        data-query="deliverystock" onclick="switchTable(this, 'deliverystock')">
+            <i class="fa-solid fa-warehouse"></i>Delivery Stock</button>
     </div>
 
     <!-- Add more SELECT buttons here, following the same pattern -->
@@ -38,7 +56,33 @@
         renderTable() / runSelect() write into this div.
     ====================================================== -->
 
-    <div id="result-container"></div>
+        <div id="result-container"></div>
+      </div>
+
+ <div id="section-reports" style="display:none;">
+        <div class="page-title">
+            <h2>Reports</h2>
+            <p>View and export business reports as PDF.</p>
+        </div>
+ 
+        <!-- Report sub-tabs -->
+        <div class="table-nav" id="report-nav">
+            <button class="tab-btn active" data-report="report_customer_order_history"  onclick="switchReport(this, 'report_customer_order_history',  'Customer Order History')">Customer Order History</button>
+            <button class="tab-btn"        data-report="report_order_item_breakdown"    onclick="switchReport(this, 'report_order_item_breakdown',    'Order Item Breakdown')">Order Item Breakdown</button>
+            <button class="tab-btn"        data-report="report_supplier_product_catalog" onclick="switchReport(this, 'report_supplier_product_catalog', 'Supplier Product Catalog')">Supplier Product Catalog</button>
+        </div>
+ 
+        <!-- Report header bar -->
+        <div class="report-header">
+            <div>
+                <p class="report-title" id="reportTitle">Customer Order History</p>
+                <p class="report-subtitle" id="reportSubtitle">Loading...</p>
+            </div>
+            <button class="export-btn" onclick="exportPDF()"><i class="fa-solid fa-download"></i>Export PDF</button>
+        </div>
+ 
+        <div id="report-container"></div>
+    </div>
 
     <!-- =====================================================
         MODAL: shown when the user clicks "View" on a row.

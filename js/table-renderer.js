@@ -87,7 +87,7 @@ function ViewOptions(rowDataB64)
 
     // Reset components & display modal
     modalTitle.innerText = `Manage ${currentTable.toUpperCase()} (ID: ${primaryId})`;
-    modalDetails.style.display = 'none';
+    modalDetails.style.display = 'block';
     modalDetails.innerHTML = detailsText;
     modal.style.display = 'flex';
 
@@ -290,3 +290,130 @@ function switchTable(btn, tableName)
 }
 
 switchTable(document.querySelector('.tab-btn'), 'customer');
+
+// ==== REPORTS ===========================================
+ 
+// Subtitle descriptions for each report — shown below the report title when a tab is active.
+const REPORT_DESCRIPTIONS = {
+    'report_customer_order_history':   'Track customer purchases and payment references.',
+    'report_order_item_breakdown':     'View each order with its product and supplier details.',
+    'report_supplier_product_catalog': 'Browse all supplier products with stock and pricing.',
+};
+
+// Keeps track of which report is currently open, used as the title when printing/exporting.
+let activeReportName = 'Customer Order History';
+
+// Handles clicking a report tab.
+// Marks the clicked tab as active, updates the title and subtitle on the page,
+// then triggers the data fetch for that report.
+function switchReport(btn, queryName, label) {
+    // Deactivate all report tabs, then activate the clicked one
+    document.querySelectorAll('#report-nav .tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    // Update the header title and subtitle
+    activeReportName = label;
+    document.getElementById('reportTitle').textContent    = label;
+    document.getElementById('reportSubtitle').textContent = REPORT_DESCRIPTIONS[queryName] ?? '';
+
+    loadReport(queryName);
+}
+
+// Fetches report data from the backend using the given query name.
+// Shows a loading message while waiting, then passes the data to renderReportTable().
+// If something goes wrong (server error or network failure), it shows an error message instead.
+async function loadReport(queryName) {
+    const container = document.getElementById('report-container');
+    container.innerHTML = '<p class="loading-text">Loading report...</p>';
+
+    try {
+        const res  = await fetch(`api/select.php?query=${encodeURIComponent(queryName)}`);
+        const json = await res.json();
+
+        if (json.error) {
+            container.innerHTML = `<p class="error-text">Error: ${escapeHtml(json.error)}</p>`;
+            return;
+        }
+
+        renderReportTable(json.data, queryName);
+
+    } catch (err) {
+        container.innerHTML = `<p class="error-text">Fetch failed: ${escapeHtml(err.message)}</p>`;
+    }
+}
+
+// Takes the fetched rows and puts them on the page.
+// If there's no data, shows a "no results" message.
+// Otherwise, grabs the column names and hands everything off to buildTableHTML().
+function renderReportTable(rows) {
+    const container = document.getElementById('report-container');
+
+    if (!rows || rows.length === 0) {
+        container.innerHTML = '<p>No data found for this report.</p>';
+        return;
+    }
+
+    const columns = Object.keys(rows[0]);
+
+    container.innerHTML = buildTableHTML(rows, columns);
+}
+
+// Builds the full table HTML string from the rows and column names.
+// Handles status columns specially — wraps their values in a colored badge.
+// Also adds a record count footer at the bottom (e.g. "24 records").
+function buildTableHTML(rows, columns) {
+    const isStatusColumn = col => col.toLowerCase().includes('status');
+
+    const headerCells = columns
+        .map(col => `<th>${escapeHtml(col)}</th>`)
+        .join('');
+
+    const bodyRows = rows.map(row => {
+        const cells = columns.map(col => {
+            const value = String(row[col] ?? '');
+            const cell  = isStatusColumn(col) ? statusBadge(value) : escapeHtml(value);
+            return `<td>${cell}</td>`;
+        }).join('');
+        return `<tr>${cells}</tr>`;
+    }).join('');
+
+    const recordCount = rows.length;
+    const recordLabel = `${recordCount} record${recordCount !== 1 ? 's' : ''}`;
+
+    return `
+        <div class="table-scroll">
+            <table>
+                <thead><tr>${headerCells}</tr></thead>
+                <tbody>${bodyRows}</tbody>
+            </table>
+        </div>
+        <p class="record-count">${recordLabel}</p>
+    `;
+}
+
+// Triggers the browser's print dialog so the user can save the report as a PDF.
+// The actual PDF layout and styling is handled by @media print rules in the CSS.
+function exportPDF() {
+    window.print();
+}
+
+// Switches between the Tables and Reports sections of the app.
+// Shows the correct section, hides the other, and updates the nav button states.
+// If the user is opening Reports for the first time (container is empty),
+// it auto-clicks the first tab so they don't land on a blank page.
+function showSection(section) {
+    const isReports = section === 'reports';
+
+    document.getElementById('section-tables').style.display  = isReports ? 'none'  : 'block';
+    document.getElementById('section-reports').style.display = isReports ? 'block' : 'none';
+
+    document.getElementById('navTables').classList.toggle('active', !isReports);
+    document.getElementById('navReports').classList.toggle('active',  isReports);
+
+   
+    if (isReports) {
+        const firstBtn      = document.querySelector('#report-nav .tab-btn');
+        const containerEmpty = document.getElementById('report-container').innerHTML === '';
+        if (firstBtn && containerEmpty) firstBtn.click();
+    }
+}

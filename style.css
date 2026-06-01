@@ -43,7 +43,7 @@ body
 h1
 {
     font-family: 'Montserrat', sans-serif;
-    font-size: 34px;
+    font-size: 28px;
     font-weight: 800;
     color: #20252d;
     margin-bottom: 1rem;
@@ -209,8 +209,8 @@ button[onclick*="handleUpdate"]:hover
     background: #fff;
     color: #555;
     font-family: 'Inter', sans-serif;
-    font-size: 13px;
-    font-weight: 500;
+    font-size: 14px;
+    font-weight: 550;
     white-space: nowrap;
     cursor: pointer;
     transition: background 0.15s, border-color 0.15s, color 0.15s;
@@ -246,6 +246,16 @@ button[onclick*="handleUpdate"]:hover
     padding: 1rem 1.25rem;
     color: #888;
     font-size: 14px;
+}
+
+#result-container .record-count,
+#report-container .record-count
+{
+    padding: 1rem 1.25rem;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 500;
+    background: #38414e;
 }
 
 
@@ -445,3 +455,130 @@ tbody tr:hover
     background: #f1f5f9;
     border-color: #cbd5e1;
 }
+
+/* ==== RESPONSIVE ====================================== */
+@media (max-width: 600px)
+{
+    .wrap        { padding: 1rem; }
+    .site-header { padding: 0 1rem; }
+    td, th       { padding: 10px 12px; }
+}
+ 
+ 
+/* ==== SITE NAV (Tables | Reports) ===================== */
+.site-nav
+{
+    margin-left: auto;
+    display: flex;
+    gap: 4px;
+}
+ 
+.site-nav-btn
+{
+    height: 32px;
+    padding: 0 16px;
+    border: 1.5px solid rgba(255,255,255,.15);
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: rgba(255,255,255,.6);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+ 
+.site-nav-btn:hover
+{
+    background: rgba(255,255,255,.08);
+    color: #fff;
+    border-color: rgba(255,255,255,.25);
+}
+ 
+.site-nav-btn.active
+{
+    background: var(--green-500);
+    border-color: var(--green-500);
+    color: #fff;
+    box-shadow: var(--shadow-green);
+}
+ 
+ 
+/* ==== REPORT HEADER =================================== */
+.report-header
+{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    padding: 16px 20px;
+    background: #fff;
+    border: 1.5px solid var(--slate-200);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+ 
+.report-title
+{
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--slate-900);
+    letter-spacing: -0.01em;
+}
+ 
+.report-subtitle
+{
+    font-size: 12px;
+    color: var(--slate-400);
+    margin-top: 2px;
+}
+ 
+.export-btn
+{
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 38px;
+    padding: 0 18px;
+    background: #2a323f;
+    border: none;
+    border-radius: 8px;
+    color: #ffffff;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+ 
+.export-btn:hover
+{
+    background: #192433;
+    text-decoration-color: #fff;
+    transform: translateY(-1px);
+}
+ 
+.export-btn:active
+{
+    transform: scale(0.98);
+}
+ 
+ 
+/* ==== REPORT CONTAINER ================================ */
+#report-container
+{
+    background: #fff;
+    border: 1.5px solid var(--slate-200);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+}
+ 
+#report-container p
+{
+    padding: 1.25rem 1.5rem;
+    color: var(--slate-400);
+    font-size: 14px;
+}
+ 
+ 
