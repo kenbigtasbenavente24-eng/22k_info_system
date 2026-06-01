@@ -43,12 +43,24 @@ if (!$stmt) {
 }
 
 // Bind parameters dynamically using the type string from queries.php (e.g. 'i', 'si', 'ss')
-if (!empty($params)) {
-    // bind_param needs variables passed by reference, so we use a ref-array trick
-    $stmt->bind_param($entry['types'], ...$params);
+if (!empty($params))
+{
+    $refs = [$entry['types']];
+    foreach ($params as &$p)
+    {
+        $refs[] = &$p;
+    }
+    call_user_func_array([$stmt, 'bind_param'], $refs);
 }
 
-$stmt->execute();
+if (!$stmt->execute())
+{
+    http_response_code(500);
+    echo json_encode(['error' => 'Execution failed: ' . $stmt->error]);
+    $stmt->close();
+    $conn->close();
+    exit;
+}
 
 echo json_encode(['affected_rows' => $stmt->affected_rows]);
 

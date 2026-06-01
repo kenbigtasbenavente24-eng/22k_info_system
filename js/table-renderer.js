@@ -88,14 +88,8 @@ function ViewOptions(rowJsonString)
     modal.style.display = "flex";
 
     // --- BUTTON EVENT LISTENERS ---
-    
-    // 1. Show Details Button
-    // document.getElementById('btnDetails').onclick = function()
-    // {
-    //     modalDetails.style.display = modalDetails.style.display === "none" ? "block" : "none";
-    // };
 
-    // 2. Update Button
+    // Update Button
     document.getElementById('btnUpdate').onclick = async function()
     {
         modal.style.display = "none"; // Close modal early
@@ -105,7 +99,7 @@ function ViewOptions(rowJsonString)
         await handleUpdate(currentTable, primaryId, oldNameValue);
     };
 
-    // 3. Delete Button
+    // Delete Button
     document.getElementById('btnDelete').onclick = function()
     {
         modal.style.display = "none"; // Close modal early
@@ -113,7 +107,7 @@ function ViewOptions(rowJsonString)
         handleDelete(currentTable, primaryId);
     };
 
-    // 4. Close Button
+    // Close Button
     document.getElementById('btnClose').onclick = function()
     {
         modal.style.display = "none";
@@ -146,7 +140,7 @@ async function runSelect(queryName, containerId) {
     const container = document.getElementById(containerId);
     container.innerHTML = 'Loading...';
 
-    if(queryName = 'get_table') queryName = document.getElementById('table-select').value; 
+    if(queryName === 'get_table') queryName = document.getElementById('table-select').value; 
 
     try {
         const res  = await fetch(`api/select.php?query=${encodeURIComponent(queryName)}`);

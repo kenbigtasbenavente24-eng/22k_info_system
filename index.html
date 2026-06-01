@@ -37,28 +37,14 @@
      runDelete() takes the query name and an array of
      values for the ? placeholders in that query.
      After deleting, we re-run the SELECT to refresh the table.
-====================================================== -->
-
-<!--
-Remove this section since its already in the 'View' options
-<h2>DELETE</h2>
-
-<button onclick="handleDelete()">Delete Item (id = 1)</button-->
-
-<!-- =====================================================
+======================================================
+======================================================
      SECTION: UPDATE
      runUpdate() takes the query name and an array of
      values for the ? placeholders in that query.
      Order must match the order of ? in the SQL.
-====================================================== -->
-
-<!--
-Remove this section since its already in the 'View' options
-<h2>UPDATE</h2>
-
-<button onclick="handleUpdate()">Rename Item (id = 1)</button-->
-
-<!-- =====================================================
+====================================================== 
+======================================================
      TABLE OUTPUT
      renderTable() / runSelect() write into this div.
 ====================================================== -->
@@ -74,7 +60,6 @@ Remove this section since its already in the 'View' options
         <div id="modalDetails" style="text-align: left; margin: 15px 0; font-family: monospace; white-space: pre-wrap; background: #f9f9f9; padding: 10px; border-radius: 6px; display: none;"></div>
         
         <div class="modal-buttons">
-            <!--<button id="btnDetails" class="modal-btn info">Show Details</button-->
             <button id="btnUpdate" class="modal-btn warning">Update Record</button>
             <button id="btnDelete" class="modal-btn danger">Delete Record</button>
             <button id="btnClose" class="modal-btn cancel">Close</button>
