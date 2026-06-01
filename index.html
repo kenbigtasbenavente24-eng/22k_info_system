@@ -5,16 +5,23 @@
     <title>My App</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
 
 <header class="site-header">
-    <h1>22K Information System</h1>
- 
-    <!-- Main nav: Tables | Reports -->
+    <div class="site-brand">
+        <span class="site-title">22K Information System</span>
+    </div>
+
     <nav class="site-nav">
-        <button class="site-nav-btn active" id="navTables"  onclick="showSection('tables')">Tables</button>
-        <button class="site-nav-btn"        id="navReports" onclick="showSection('reports')">Reports</button>
+        <button class="site-nav-btn active" id="navTables"  onclick="showSection('tables')">
+            <i class="fa-solid fa-table"></i> Tables
+        </button>
+        <button class="site-nav-btn"        id="navReports" onclick="showSection('reports')">
+            <i class="fa-solid fa-chart-bar"></i> Reports
+        </button>
     </nav>
 </header>
 
@@ -67,11 +74,11 @@
         <!-- Report sub-tabs -->
         <div class="table-nav" id="report-nav">
             <button class="tab-btn active" data-report="report_customer_order_history"  onclick="switchReport(this, 'report_customer_order_history',  'Customer Order History')">Customer Order History</button>
-            <button class="tab-btn"        data-report="report_order_item_breakdown"    onclick="switchReport(this, 'report_order_item_breakdown',    'Order Item Breakdown')">Order Item Breakdown</button>
-            <button class="tab-btn"        data-report="report_supplier_product_catalog" onclick="switchReport(this, 'report_supplier_product_catalog', 'Supplier Product Catalog')">Supplier Product Catalog</button>
+            <button class="tab-btn" data-report="report_order_item_breakdown" onclick="switchReport(this, 'report_order_item_breakdown',    'Order Item Breakdown')">Order Item Breakdown</button>
+            <button class="tab-btn" data-report="report_supplier_product_catalog" onclick="switchReport(this, 'report_supplier_product_catalog', 'Supplier Product Catalog')">Supplier Product Catalog</button>
         </div>
  
-        <!-- Report header bar -->
+        <div class="report-card-wrapper">
         <div class="report-header">
             <div>
                 <p class="report-title" id="reportTitle">Customer Order History</p>
@@ -79,9 +86,10 @@
             </div>
             <button class="export-btn" onclick="exportPDF()"><i class="fa-solid fa-download"></i>Export PDF</button>
         </div>
- 
+
         <div id="report-container"></div>
     </div>
+</div>
 
     <!-- =====================================================
         MODAL: shown when the user clicks "View" on a row.

@@ -391,10 +391,50 @@ function buildTableHTML(rows, columns) {
     `;
 }
 
-// Triggers the browser's print dialog so the user can save the report as a PDF.
-// The actual PDF layout and styling is handled by @media print rules in the CSS.
+/**
+ * Exports the currently displayed report table as a PDF file.
+ * Uses jsPDF for document creation and jsPDF-AutoTable for table rendering.
+ * The filename is derived from the report title shown on screen.
+ */
 function exportPDF() {
-    window.print();
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    
+    const now = new Date();
+    const day = now.toLocaleDateString('en-US', { weekday: 'long' });
+    const date = now.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' });
+    const formattedDate = `${day}, ${date}`;
+
+    //Header Title
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text(document.getElementById('reportTitle').textContent, 14, 16);
+
+    //Formatted Date as subtitle
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100);
+    doc.text(formattedDate, 14, 23);
+
+    //Table
+    const table = document.querySelector('#report-container table');
+    if (!table) {
+        alert('No report table to export.');
+        return;
+    }
+
+    doc.autoTable({
+        html: table,
+        startY: 28,
+        styles: { fontSize: 9, cellPadding: 4 },
+        headStyles: { fillColor: [55, 65, 81], textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        margin: { left: 14, right: 14 }
+    });
+
+     // Convert the report title to a filename, replacing spaces with underscores
+    const filename = document.getElementById('reportTitle').textContent.replace(/\s+/g, '_') + '.pdf';
+    doc.save(filename);
 }
 
 // Switches between the Tables and Reports sections of the app.

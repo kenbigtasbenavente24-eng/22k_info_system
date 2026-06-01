@@ -20,7 +20,7 @@ body
 
 .wrap
 {
-    max-width: 970px;
+    max-width: 1200px;
     margin: 32px auto;
 }
 
@@ -187,33 +187,6 @@ th
     gap: 10px;
     margin-bottom: 1.5rem;
 }
-
-
-/* ==== SELECT DROPDOWN ================================ */
-
-select
-{
-    height: 36px;
-    padding: 0 12px;
-    border: 1px solid #d0cfc8;
-    border-radius: 8px;
-    background: #fff;
-    cursor: pointer;
-    outline: none;
-    transition: border-color 0.15s, box-shadow 0.15s;
-}
-
-select:hover
-{
-    border-color: #bbb;
-}
-
-select:focus
-{
-    border-color: #3a8ede;
-    box-shadow: 0 0 0 3px rgba(58, 142, 222, 0.18);
-}
-
 
 /* ==== BUTTONS — BASE ================================= */
 
@@ -539,6 +512,42 @@ tbody tr:hover
  
  
 /* ==== SITE NAV (Tables | Reports) ===================== */
+.site-header
+{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.5rem;
+    height: 80px;
+    background: #1e293b;
+    border-bottom: 1px solid #2d3f55;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.site-brand
+{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.site-brand i
+{
+    font-size: 18px;
+    color: var(--green-500);
+}
+
+.site-title
+{
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: #f1f5f9;
+    white-space: nowrap;
+}
+
 .site-nav
 {
     margin-left: auto;
@@ -577,37 +586,49 @@ tbody tr:hover
 }
  
  
-/* ==== REPORT HEADER =================================== */
-.report-header
-{
+/* ==== REPORT CARD WRAPPER ==== */
+.report-card-wrapper {
+    background-color: #ffffff;
+    border: 1.5px solid var(--slate-200);
+    border-radius: 10px;
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ==== REPORT HEADER ==== */
+.report-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 1rem;
-    padding: 16px 20px;
-    background: #fff;
-    border: 1.5px solid var(--slate-200);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
+    padding: 20px 24px;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    margin-bottom: 0;
+    border-bottom: 1px solid var(--slate-200);
 }
- 
-.report-title
-{
+
+.report-title {
     font-size: 15px;
     font-weight: 700;
     color: var(--slate-900);
     letter-spacing: -0.01em;
+    margin: 0;
 }
- 
-.report-subtitle
-{
+
+.report-subtitle {
     font-size: 12px;
     color: var(--slate-400);
     margin-top: 2px;
+    margin-bottom: 0;
 }
- 
-.export-btn
-{
+
+/* ==== EXPORT BUTTON ==== */
+.export-btn {
     display: inline-flex;
     align-items: center;
     gap: 7px;
@@ -623,35 +644,61 @@ tbody tr:hover
     cursor: pointer;
     transition: all 0.15s ease;
 }
- 
-.export-btn:hover
-{
+
+.export-btn:hover {
     background: #192433;
     text-decoration-color: #fff;
     transform: translateY(-1px);
 }
- 
-.export-btn:active
-{
+
+.export-btn:active {
     transform: scale(0.98);
 }
- 
- 
-/* ==== REPORT CONTAINER ================================ */
-#report-container
-{
-    background: #fff;
-    border: 1.5px solid var(--slate-200);
-    border-radius: var(--radius-xl);
-    overflow: hidden;
-    box-shadow: var(--shadow-md);
+
+/* ==== TABLE AREA ==== */
+#report-container {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
 }
- 
-#report-container p
-{
+
+#report-container p {
     padding: 1.25rem 1.5rem;
     color: var(--slate-400);
     font-size: 14px;
+    margin: 0;
 }
- 
- 
+
+/* ====TABLE STYLING ==== */
+#report-container table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+    border: none;
+}
+
+#report-container th {
+    background-color: #374151;
+    color: #ffffff;
+    padding: 14px 24px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border: none;
+}
+
+#report-container td {
+    padding: 16px 24px;
+    border-bottom: 1px solid #f3f4f6;
+    color: #374151;
+    background-color: #ffffff;
+}
+
+#report-container tr:last-child td {
+    border-bottom: none;
+}
