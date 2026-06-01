@@ -60,17 +60,101 @@ h2
     margin-bottom: 0.75rem;
 }
 
-table
-{
-    font-family: 'Roboto Mono', monospace;
-    color: #1a1a1a;
-}
-
 select,
 button
 {
-    font-family: 'Roboto Mono', monospace;
+    font-family: "Courier New", monospace;
     font-weight: 500;
+    white-space: nowrap;
+}
+
+button
+{
+    font-size: 13px;
+    color: #555;
+}
+
+select
+{
+    color: #1a1a1a;
+    font-size: 14px;
+}
+
+table
+{
+    font-family: Tahoma, sans-serif;
+    color: #1a1a1a;
+    font-size: 14px;
+}
+
+#result-container p
+{
+    color: #888;
+    font-size: 14px;
+}
+
+td button
+{
+    font-size: 11.5px;
+    color: #475569;
+}
+
+th
+{
+    text-align: left;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #fff;
+}
+
+td
+{
+    color: #1e293b;
+}
+
+td,
+th
+{
+    text-align: left;
+}
+.loading-text
+{
+    color: #888;
+    font-size: 14px;
+}
+
+.error-text
+{
+    color: #c0392b;
+    font-size: 14px;
+}
+
+.modal-content h3
+{
+    font-family: 'Montserrat', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+#modalDetails
+{
+    text-align: left;
+    margin: 0 0 16px;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 12.5px;
+    white-space: pre-wrap;
+    color: #334155;
+    line-height: 1.8;
+}
+
+.modal-btn
+{
+    font-family: 'Inter', sans-serif;
+    font-size: 13.5px;
+    font-weight: 600;
 }
 
 
@@ -95,8 +179,6 @@ select
     border: 1px solid #d0cfc8;
     border-radius: 8px;
     background: #fff;
-    color: #1a1a1a;
-    font-size: 14px;
     cursor: pointer;
     outline: none;
     transition: border-color 0.15s, box-shadow 0.15s;
@@ -123,7 +205,6 @@ button
     border: 1px solid transparent;
     border-radius: 8px;
     background: transparent;
-    font-size: 13px;
     cursor: pointer;
     transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
@@ -140,10 +221,8 @@ td button
 {
     height: 26px;
     padding: 0 10px;
-    font-size: 11.5px;
     background: #f1f5f9;
     border: 1px solid #e2e8f0;
-    color: #475569;
     border-radius: 6px;
 }
 
@@ -207,11 +286,6 @@ button[onclick*="handleUpdate"]:hover
     border: 1px solid #d0cfc8;
     border-radius: 8px;
     background: #fff;
-    color: #555;
-    font-family: 'Inter', sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-    white-space: nowrap;
     cursor: pointer;
     transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
@@ -244,8 +318,6 @@ button[onclick*="handleUpdate"]:hover
 #result-container p
 {
     padding: 1rem 1.25rem;
-    color: #888;
-    font-size: 14px;
 }
 
 
@@ -255,7 +327,6 @@ table
 {
     width: 100%;
     border-collapse: collapse;
-    font-size: 14px;
 }
 
 thead tr
@@ -266,12 +337,6 @@ thead tr
 th
 {
     padding: 11px 16px;
-    text-align: left;
-    font-size: 13px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: #fff;
     background: #38414e;
     white-space: nowrap;
     border-bottom: 1px solid #e0dfd8;
@@ -281,13 +346,11 @@ td,
 th
 {
     padding: 11px 16px;
-    text-align: left;
 }
 
 td
 {
     border-bottom: 1px solid #f1f5f9;
-    color: #1e293b;
     vertical-align: middle;
 }
 
@@ -307,15 +370,11 @@ tbody tr:hover
 .loading-text
 {
     padding: 1rem 1.25rem;
-    color: #888;
-    font-size: 14px;
 }
 
 .error-text
 {
     padding: 1rem 1.25rem;
-    color: #c0392b;
-    font-size: 14px;
 }
 
 
@@ -355,10 +414,6 @@ tbody tr:hover
 
 .modal-content h3
 {
-    font-family: 'Montserrat', sans-serif;
-    font-size: 16px;
-    font-weight: 700;
-    color: #1e293b;
     margin-bottom: 8px;
 }
 
@@ -371,17 +426,10 @@ tbody tr:hover
 
 #modalDetails
 {
-    text-align: left;
-    margin: 0 0 16px;
-    font-family: 'Roboto Mono', monospace;
-    font-size: 12.5px;
-    white-space: pre-wrap;
     background: #f8fafc;
     border: 1px solid #e2e8f0;
     border-radius: 6px;
     padding: 10px 12px;
-    color: #334155;
-    line-height: 1.8;
 }
 
 .modal-buttons
@@ -399,9 +447,6 @@ tbody tr:hover
     width: 100%;
     height: 40px;
     border-radius: 8px;
-    font-family: 'Inter', sans-serif;
-    font-size: 13.5px;
-    font-weight: 600;
     cursor: pointer;
     border: 1px solid transparent;
     transition: background 0.15s, border-color 0.15s;
