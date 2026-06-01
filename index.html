@@ -15,20 +15,27 @@
        1. the query name from $SELECT_QUERIES in queries.php
        2. the id of the div where the table will appear
 ====================================================== -->
-<h2>SELECT</h2>
 
-<select id="table-select">
-    <option value="customer">Customers</option>
-    <option value="product">Products</option>
-    <option value="supplier">Suppliers</option>
-    <option value="orders">Orders</option>
-    <option value="payment">Payments</option>
-    <option value="deliverystock">Delivery Stock</option>
-</select>
-
-<button onclick="runSelect('get_table', 'result-container')">
-    Fetch Table
-</button>
+<div class="table-nav">
+    <button class="tab-btn active" onclick="switchTable(this, 'customer')">
+        <span class="tab-icon">Customer List
+    </button>
+    <button class="tab-btn" onclick="switchTable(this, 'orders')">
+        <span class="tab-icon">Orders List
+    </button>
+    <button class="tab-btn" onclick="switchTable(this, 'payment')">
+        <span class="tab-icon">Payment List
+    </button>
+    <button class="tab-btn" onclick="switchTable(this, 'product')">
+        <span class="tab-icon">Product Catalog
+    </button>
+    <button class="tab-btn" onclick="switchTable(this, 'supplier')">
+        <span class="tab-icon">Suppliers
+    </button>
+    <button class="tab-btn" onclick="switchTable(this, 'deliverystock')">
+        <span class="tab-icon">Delivery Stock
+    </button>
+</div>
 
 <!-- Add more SELECT buttons here, following the same pattern -->
 

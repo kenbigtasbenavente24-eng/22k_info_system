@@ -77,8 +77,6 @@ async function runSelect(queryName, containerId) {
     const container = document.getElementById(containerId);
     container.innerHTML = 'Loading...';
 
-    if(queryName = 'get_table') queryName = document.getElementById('table-select').value; 
-
     try {
         const res  = await fetch(`api/select.php?query=${encodeURIComponent(queryName)}`);
         const json = await res.json();
@@ -158,3 +156,11 @@ async function runUpdate(queryName, params = []) {
         return -1;
     }
 }
+
+function switchTable(btn, tableName) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    runSelect(tableName, 'result-container');
+}
+
+switchTable(document.querySelector('.tab-btn'), 'customer');

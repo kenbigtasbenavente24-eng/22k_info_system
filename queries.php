@@ -32,6 +32,9 @@ $SELECT_QUERIES = [
     'supplier' =>
         "SELECT * FROM supplier",
 
+    'orders'       => "SELECT * FROM orders",
+    'payment'      => "SELECT * FROM payment",
+    'deliverystock' => "SELECT * FROM deliverystock",
     // Add your own SELECT queries below:
     // 'my_query_name' => "SELECT col1, col2 FROM my_table WHERE ...",
 
