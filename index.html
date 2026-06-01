@@ -7,67 +7,71 @@
 </head>
 <body>
 
-<h1>Hello!</h1>
+<div class="wrap">
 
-<!-- =====================================================
-     SECTION: SELECT
-     Each button calls runSelect() with:
-       1. the query name from $SELECT_QUERIES in queries.php
-       2. the id of the div where the table will appear
-====================================================== -->
+    <h1>Greetings!</h1>
 
-<div class="table-nav">
-    <button class="tab-btn active" onclick="switchTable(this, 'customer')">
-        <span class="tab-icon">Customer List
-    </button>
-    <button class="tab-btn" onclick="switchTable(this, 'orders')">
-        <span class="tab-icon">Orders List
-    </button>
-    <button class="tab-btn" onclick="switchTable(this, 'payment')">
-        <span class="tab-icon">Payment List
-    </button>
-    <button class="tab-btn" onclick="switchTable(this, 'product')">
-        <span class="tab-icon">Product Catalog
-    </button>
-    <button class="tab-btn" onclick="switchTable(this, 'supplier')">
-        <span class="tab-icon">Suppliers
-    </button>
-    <button class="tab-btn" onclick="switchTable(this, 'deliverystock')">
-        <span class="tab-icon">Delivery Stock
-    </button>
-</div>
+    <!-- =====================================================
+        SECTION: SELECT
+        Each button calls runSelect() with:
+        1. the query name from $SELECT_QUERIES in queries.php
+        2. the id of the div where the table will appear
+    ====================================================== -->
 
-<!-- Add more SELECT buttons here, following the same pattern -->
+    <div class="table-nav">
+        <button class="tab-btn active" onclick="switchTable(this, 'customer')">
+            <span class="tab-icon">Customer List
+        </button>
+        <button class="tab-btn" onclick="switchTable(this, 'orders')">
+            <span class="tab-icon">Orders List
+        </button>
+        <button class="tab-btn" onclick="switchTable(this, 'payment')">
+            <span class="tab-icon">Payment List
+        </button>
+        <button class="tab-btn" onclick="switchTable(this, 'product')">
+            <span class="tab-icon">Product Catalog
+        </button>
+        <button class="tab-btn" onclick="switchTable(this, 'supplier')">
+            <span class="tab-icon">Suppliers
+        </button>
+        <button class="tab-btn" onclick="switchTable(this, 'deliverystock')">
+            <span class="tab-icon">Delivery Stock
+        </button>
+    </div>
 
-<!-- =====================================================
-     SECTION: DELETE
-     runDelete() takes the query name and an array of
-     values for the ? placeholders in that query.
-     After deleting, we re-run the SELECT to refresh the table.
-====================================================== -->
+    <!-- Add more SELECT buttons here, following the same pattern -->
 
-<h2>DELETE</h2>
+    <!-- =====================================================
+        SECTION: DELETE
+        runDelete() takes the query name and an array of
+        values for the ? placeholders in that query.
+        After deleting, we re-run the SELECT to refresh the table.
+    ====================================================== -->
 
-<button onclick="handleDelete()">Delete Item (id = 1)</button>
+    <h2>DELETE</h2>
 
-<!-- =====================================================
-     SECTION: UPDATE
-     runUpdate() takes the query name and an array of
-     values for the ? placeholders in that query.
-     Order must match the order of ? in the SQL.
-====================================================== -->
+    <button onclick="handleDelete()">Delete Item (id = 1)</button>
 
-<h2>UPDATE</h2>
+    <!-- =====================================================
+        SECTION: UPDATE
+        runUpdate() takes the query name and an array of
+        values for the ? placeholders in that query.
+        Order must match the order of ? in the SQL.
+    ====================================================== -->
 
-<button onclick="handleUpdate()">Rename Item (id = 1)</button>
+    <h2>UPDATE</h2>
 
-<!-- =====================================================
-     TABLE OUTPUT
-     renderTable() / runSelect() write into this div.
-====================================================== -->
-<div id="result-container">
-    <!-- Results appear here -->
-</div>
+    <button onclick="handleUpdate()">Rename Item (id = 1)</button>
+
+    <!-- =====================================================
+        TABLE OUTPUT
+        renderTable() / runSelect() write into this div.
+    ====================================================== -->
+    <div id="result-container">
+        <!-- Results appear here -->
+    </div>
+
+</div><!-- /.wrap -->
 
 <!-- Load the shared table renderer + API helper functions -->
 <script src="js/table-renderer.js"></script>
