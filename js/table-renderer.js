@@ -77,6 +77,8 @@ async function runSelect(queryName, containerId) {
     const container = document.getElementById(containerId);
     container.innerHTML = 'Loading...';
 
+    if(queryName = 'get_table') queryName = document.getElementById('table-select').value; 
+
     try {
         const res  = await fetch(`api/select.php?query=${encodeURIComponent(queryName)}`);
         const json = await res.json();
@@ -104,9 +106,6 @@ async function runSelect(queryName, containerId) {
  *   const affected = await runDelete('delete_item_by_id', [42]);
  */
 async function runDelete(queryName, params = []) {
-
-    if(queryName === 'delete_table_item') queryName = document.getElementById('table-select').value; 
-
     try {
         const res  = await fetch('api/delete.php', {
             method:  'POST',
