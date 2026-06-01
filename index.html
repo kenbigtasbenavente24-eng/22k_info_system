@@ -13,52 +13,89 @@
 
     <!-- =====================================================
         SECTION: SELECT
-        Each button calls switchTable() with:
-          1. the button element itself (for active state)
-          2. the query name from $SELECT_QUERIES in queries.php
-        data-query stores the query name so getActiveQueryName()
-        can retrieve it for post-delete/update refresh.
+        Each button calls runSelect() with:
+        1. the query name from $SELECT_QUERIES in queries.php
+        2. the id of the div where the table will appear
     ====================================================== -->
 
     <div class="table-nav">
-        <button class="tab-btn active" data-query="customer"      onclick="switchTable(this, 'customer')">Customer List</button>
-        <button class="tab-btn"        data-query="orders"        onclick="switchTable(this, 'orders')">Orders List</button>
-        <button class="tab-btn"        data-query="payment"       onclick="switchTable(this, 'payment')">Payment List</button>
-        <button class="tab-btn"        data-query="product"       onclick="switchTable(this, 'product')">Product Catalog</button>
-        <button class="tab-btn"        data-query="supplier"      onclick="switchTable(this, 'supplier')">Suppliers</button>
-        <button class="tab-btn"        data-query="deliverystock" onclick="switchTable(this, 'deliverystock')">Delivery Stock</button>
+        <button class="tab-btn active" onclick="switchTable(this, 'customer')">
+            <span class="tab-icon">Customer List
+        </button>
+        <button class="tab-btn" onclick="switchTable(this, 'orders')">
+            <span class="tab-icon">Orders List
+        </button>
+        <button class="tab-btn" onclick="switchTable(this, 'payment')">
+            <span class="tab-icon">Payment List
+        </button>
+        <button class="tab-btn" onclick="switchTable(this, 'product')">
+            <span class="tab-icon">Product Catalog
+        </button>
+        <button class="tab-btn" onclick="switchTable(this, 'supplier')">
+            <span class="tab-icon">Suppliers
+        </button>
+        <button class="tab-btn" onclick="switchTable(this, 'deliverystock')">
+            <span class="tab-icon">Delivery Stock
+        </button>
     </div>
 
     <!-- Add more SELECT buttons here, following the same pattern -->
 
     <!-- =====================================================
+        SECTION: DELETE
+        runDelete() takes the query name and an array of
+        values for the ? placeholders in that query.
+        After deleting, we re-run the SELECT to refresh the table.
+    ====================================================== -->
+
+    <h2>DELETE</h2>
+
+    <button onclick="handleDelete()">Delete Item (id = 1)</button>
+
+    <!-- =====================================================
+        SECTION: UPDATE
+        runUpdate() takes the query name and an array of
+        values for the ? placeholders in that query.
+        Order must match the order of ? in the SQL.
+    ====================================================== -->
+
+    <h2>UPDATE</h2>
+
+    <button onclick="handleUpdate()">Rename Item (id = 1)</button>
+
+    <!-- =====================================================
         TABLE OUTPUT
         renderTable() / runSelect() write into this div.
     ====================================================== -->
-
-    <div id="result-container"></div>
-
-    <!-- =====================================================
-        MODAL: shown when the user clicks "View" on a row.
-        Buttons wire up their handlers inside ViewOptions().
-    ====================================================== -->
-
-    <div id="viewModal" class="modal-backdrop" style="display: none;">
-        <div class="modal-content">
-            <h3 id="modalTitle">Record Options</h3>
-            <hr>
-            <div id="modalDetails"></div>
-            <div class="modal-buttons">
-                <button id="btnUpdate" class="modal-btn warning">Update Record</button>
-                <button id="btnDelete" class="modal-btn danger">Delete Record</button>
-                <button id="btnClose"  class="modal-btn cancel">Close</button>
-            </div>
-        </div>
+    <div id="result-container">
+        <!-- Results appear here -->
     </div>
 
 </div><!-- /.wrap -->
 
+<!-- Load the shared table renderer + API helper functions -->
 <script src="js/table-renderer.js"></script>
+
+<script>
+async function handleDelete() {
+    // 'delete_table_item' SQL:  DELETE FROM ... WHERE id = ?
+    const affected = await runDelete('delete_table_item', [1]);
+    alert(`Deleted ${affected} row(s).`);
+    // Refresh the table after deletion
+    runSelect('get_table', 'result-container');
+}
+
+async function handleUpdate() {
+    // 'update_item_name' SQL:  UPDATE ... SET name = ? WHERE id = ?
+    //  params order:           [name_value,  id_value]
+    const affected = await runUpdate('update_item_name', ['Updated Name', 1]);
+    alert(`Updated ${affected} row(s).`);
+    // Refresh the table after update
+    runSelect('get_all_items', 'result-container');
+}
+
+runSelect('customer', 'result-container');
+</script>
 
 </body>
 </html>
