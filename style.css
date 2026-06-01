@@ -20,8 +20,8 @@ body
 
 .wrap
 {
-    max-width: 870px;
-    margin: 0 auto;
+    max-width: 970px;
+    margin: 32px auto;
 }
 
 .table-scroll
@@ -34,10 +34,11 @@ body
 
 body
 {
-    font-family: 'Inter', sans-serif;
+    font-family: Verdana, sans-serif;
     font-size: 13px;
     line-height: 1.6;
     color: #1a1a1a;
+    padding: 0;
 }
 
 h1
@@ -47,6 +48,13 @@ h1
     font-weight: 800;
     color: #20252d;
     margin-bottom: 1rem;
+}
+
+.header-title
+{
+    color: #fff;
+    margin: 0;
+    padding: 0;
 }
 
 h2
@@ -70,7 +78,7 @@ button
 
 button
 {
-    font-size: 13px;
+    font-size: 13.5px;
     color: #555;
 }
 
@@ -82,15 +90,15 @@ select
 
 table
 {
-    font-family: Tahoma, sans-serif;
+    font-family: Verdana, sans-serif;
     color: #1a1a1a;
-    font-size: 14px;
+    font-size: 13px;
 }
 
 #result-container p
 {
     color: #888;
-    font-size: 14px;
+    font-size: 13px;
 }
 
 td button
@@ -105,7 +113,6 @@ th
     font-size: 13px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
     color: #fff;
 }
 
@@ -119,6 +126,7 @@ th
 {
     text-align: left;
 }
+
 .loading-text
 {
     color: #888;
@@ -157,6 +165,17 @@ th
     font-weight: 600;
 }
 
+
+/* ==== HEADER ========================================= */
+
+.header
+{
+    text-align: center;
+    margin-bottom: 2rem;
+    background: #1e293b;
+    padding: 20px 15px;
+    margin: 0;
+}
 
 /* ==== CONTROLS ROW =================================== */
 
@@ -273,12 +292,16 @@ button[onclick*="handleUpdate"]:hover
     padding-bottom: 0.75rem;
     border-bottom: 1px solid #e2e8f0;
     overflow-x: auto;
+    justify-content: center;
 }
 
 .tab-btn
 {
-    display: inline-flex;
+    width: 100%;
+    display: flex;
+    flex: 1;
     align-items: center;
+    justify-content: center;
     gap: 6px;
     height: 34px;
     padding: 0 14px;
@@ -336,7 +359,7 @@ thead tr
 
 th
 {
-    padding: 11px 16px;
+    padding: 9.5px 13px;
     background: #38414e;
     white-space: nowrap;
     border-bottom: 1px solid #e0dfd8;
@@ -345,7 +368,7 @@ th
 td,
 th
 {
-    padding: 11px 16px;
+    padding: 9px 14px;
 }
 
 td
