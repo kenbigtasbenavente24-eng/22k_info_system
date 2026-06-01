@@ -26,18 +26,21 @@ $SELECT_QUERIES = [
     'product' =>
         "SELECT p.Prod_ID, p.Prod_Name, p.Prod_Stock, p.Prod_Price, s.Supply_ID as Supplier_ID, s.Supply_Name as Supplier_Name
         FROM product p
-        JOIN supplier s ON s.Supply_ID = p.Supply_ID
-        ",
+        JOIN supplier s ON s.Supply_ID = p.Supply_ID",
 
     'supplier' =>
         "SELECT * FROM supplier",
 
-    'orders'       => "SELECT * FROM orders",
-    'payment'      => "SELECT * FROM payment",
-    'deliverystock' => "SELECT * FROM deliverystock",
-    // Add your own SELECT queries below:
-    // 'my_query_name' => "SELECT col1, col2 FROM my_table WHERE ...",
+    'orders'   =>
+        "SELECT o.Order_ID, o.Order_Date, o.Cust_ID, c.Cust_Name
+        FROM orders o
+        JOIN customer c ON c.Cust_ID = o.Cust_ID",
 
+    'payment'  =>
+        "SELECT * FROM payment",
+
+    'deliverystock' =>
+        "SELECT * FROM deliverystock",
 ];
 
 // ==== DELETE ============================================
