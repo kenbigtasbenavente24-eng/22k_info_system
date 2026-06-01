@@ -28,7 +28,8 @@
 <div class="wrap">
       <div id="section-tables">
         <div class="page-title">
-            <h2>Greetings!</h2>
+            <h2>Table Records</h2>
+            <p>Displays all records from the tables relevant to your requirements.</p>
         </div>
 
     <!-- =====================================================
@@ -67,15 +68,18 @@
 
  <div id="section-reports" style="display:none;">
         <div class="page-title">
-            <h2>Reports</h2>
+            <h2>Data Reports</h2>
             <p>View and export business reports as PDF.</p>
         </div>
  
         <!-- Report sub-tabs -->
         <div class="table-nav" id="report-nav">
-            <button class="tab-btn active" data-report="report_customer_order_history"  onclick="switchReport(this, 'report_customer_order_history',  'Customer Order History')">Customer Order History</button>
-            <button class="tab-btn" data-report="report_order_item_breakdown" onclick="switchReport(this, 'report_order_item_breakdown',    'Order Item Breakdown')">Order Item Breakdown</button>
-            <button class="tab-btn" data-report="report_supplier_product_catalog" onclick="switchReport(this, 'report_supplier_product_catalog', 'Supplier Product Catalog')">Supplier Product Catalog</button>
+            <button class="tab-btn active" data-report="report_customer_order_history"  onclick="switchReport(this, 'report_customer_order_history','Customer Order History')">
+                <i class="fa-solid fa-history"></i>Customer Order History</button>
+            <button class="tab-btn" data-report="report_order_item_breakdown" onclick="switchReport(this, 'report_order_item_breakdown','Order Item Breakdown')">
+                <i class="fa-solid fa-box"></i>Order Item Breakdown</button>
+            <button class="tab-btn" data-report="report_supplier_product_catalog" onclick="switchReport(this, 'report_supplier_product_catalog','Supplier Product Catalog')">
+                <i class="fa-solid fa-boxes"></i>Supplier Product Catalog</button>
         </div>
  
         <div class="report-card-wrapper">

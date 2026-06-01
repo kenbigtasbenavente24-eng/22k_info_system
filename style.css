@@ -60,12 +60,16 @@ h1
 h2
 {
     font-family: 'Montserrat', sans-serif;
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 20px;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: #555;
-    margin-bottom: 0.75rem;
+}
+
+.page-title p{
+    font-size: 14px;
+    margin-bottom: 20px;
 }
 
 select,
@@ -328,7 +332,7 @@ button[onclick*="handleUpdate"]:hover
     color: #ffffff;
     font-size: 13px;
     font-weight: 500;
-    background: #38414e;
+    background: #38414e;  
 }
 
 
@@ -542,8 +546,8 @@ tbody tr:hover
 .site-title
 {
     font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 15px;
-    font-weight: 700;
+    font-size: 20px;
+    font-weight: 800;
     color: #f1f5f9;
     white-space: nowrap;
 }

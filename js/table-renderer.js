@@ -293,7 +293,7 @@ switchTable(document.querySelector('.tab-btn'), 'customer');
 
 // ==== REPORTS ===========================================
  
-// Subtitle descriptions for each report — shown below the report title when a tab is active.
+// Subtitle descriptions for each report, shown below the report title when a tab is active.
 const REPORT_DESCRIPTIONS = {
     'report_customer_order_history':   'Track customer purchases and payment references.',
     'report_order_item_breakdown':     'View each order with its product and supplier details.',
