@@ -506,7 +506,54 @@ tbody tr:hover
     border-color: #cbd5e1;
 }
 
+/* ==== MODAL — UPDATE FORM ======================= */
+
+.update-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 55vh;   /* scroll if the table has many columns */
+    overflow-y: auto;
+    padding-right: 4px;
+}
+ 
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+ 
+.form-field label {
+    font-size: 0.8em;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+ 
+.form-field input {
+    padding: 7px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1em;
+}
+ 
+/* Read-only PK field looks distinct */
+.form-field input[readonly] {
+    background: #f5f5f5;
+    color: #999;
+    cursor: not-allowed;
+}
+ 
+/* Small label next to the PK column name */
+.pk-label {
+    font-weight: normal;
+    color: #aaa;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
 /* ==== RESPONSIVE ====================================== */
+
 @media (max-width: 600px)
 {
     .wrap        { padding: 1rem; }
@@ -704,5 +751,4 @@ tbody tr:hover
 }
 
 #report-container tr:last-child td {
-    border-bottom: none;
-}
+    border-bottom: none;}

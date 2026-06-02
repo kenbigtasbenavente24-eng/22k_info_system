@@ -25,7 +25,7 @@ $SELECT_QUERIES = [
 
     'product' =>
         "SELECT p.Prod_ID, p.Prod_Name, p.Prod_Stock, p.Prod_Price, 
-        s.Supply_ID AS Supplier_ID, 
+        p.Supply_ID AS Supplier_ID, 
         s.Supply_Name AS Supplier_Name
         FROM product p
         JOIN supplier s ON s.Supply_ID = p.Supply_ID",
@@ -100,36 +100,55 @@ $SELECT_QUERIES = [
 
 $DELETE_QUERIES = [
 
-    'customer' => [
-        'sql'    => "DELETE FROM customer WHERE Cust_ID = ?",
-        'types'  => 'i',   // one integer param
+    // Keys must be delete_<tableName> to match the JS
+    'delete_customer' => [
+        'sql'   => "DELETE FROM customer WHERE Cust_ID = ?",
+        'types' => 'i',
     ],
 
-    'product' => [
-        'sql'    => "DELETE FROM product WHERE Prod_ID = ?",
-        'types'  => 'i',   // one integer param
+    'delete_product' => [
+        'sql'   => "DELETE FROM product WHERE Prod_ID = ?",
+        'types' => 'i',
     ],
 
-    'supplier' => [
-        'sql'    => "DELETE FROM supplier WHERE Supply_ID = ?",
-        'types'  => 'i',   // one integer param
+    'delete_supplier' => [
+        'sql'   => "DELETE FROM supplier WHERE Supply_ID = ?",
+        'types' => 'i',
     ],
+
+    'delete_orders' => [
+        'sql'   => "DELETE FROM orders WHERE Order_ID = ?",
+        'types' => 'i',
+    ],
+
+    'delete_payment' => [
+        'sql'   => "DELETE FROM payment WHERE Payment_ID = ?",
+        'types' => 'i',
+    ],
+
+    'delete_deliverystock' => [
+        'sql'   => "DELETE FROM deliverystock WHERE DStock_ID = ?",
+        'types' => 'i',
+    ],
+
 ];
 
-// ==== UPDATE ============================================
-// List SET column params first, then the WHERE param(s) last.
-
 $UPDATE_QUERIES = [
-
-    'update_item_name' => [
-        'sql'   => "UPDATE placeholder_table SET name = ? WHERE id = ?",
-        'types' => 'si',  // string, then integer
+    'update_customer' => [
+        'sql'   => "UPDATE customer
+                    SET Cust_Name = ?, Cust_Address = ?, Cust_PhoneNum = ?
+                    WHERE Cust_ID = ?",
+        'types' => 'sssi',
     ],
-
-    // 'update_status' => [
-    //     'sql'   => "UPDATE my_table SET status = ? WHERE id = ?",
-    //     'types' => 'si',
-    // ],
-
+    'update_product' => [
+        'sql'   => "UPDATE product
+                    SET Prod_Name = ?, Prod_Stock = ?, Prod_Price = ?, Supply_ID = ?
+                    WHERE Prod_ID = ?",
+        'types' => 'ssssi',
+    ],
+    'update_supplier' => [
+        'sql'   => "UPDATE supplier SET Supply_Name = ? WHERE Supply_ID = ?",
+        'types' => 'si',
+    ],
 ];
 ?>
