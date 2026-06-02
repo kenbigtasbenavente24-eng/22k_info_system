@@ -89,6 +89,47 @@ td button:hover
 }
 
 
+/* ==== LIVE TABLE SEARCH & ADD BUTTON ================================ */
+
+.search-wrapper {
+    display: flex;
+    width: 100%;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: nowrap;
+    margin-bottom: 20px;
+}
+
+#search-bar {
+    flex: 1;
+    min-width: 500px;
+    padding: 8px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #1a1a1a;
+    box-sizing: border-box;
+}
+
+#btn-add {
+    flex-shrink: 0;
+    white-space: nowrap;
+    background: #38a169;
+    border: 1px solid #38a169;
+    border-radius: 8px;
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 550;
+    padding: 8px 24px;
+    cursor: pointer;
+}
+
+.is-hidden {
+    display: none !important;
+}
+
+
 /* ==== TABLE TABS / NAV =============================== */
 
 .table-nav

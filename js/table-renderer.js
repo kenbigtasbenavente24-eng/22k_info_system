@@ -1,6 +1,4 @@
-// -------------------------------------------------------
 // js/table-renderer.js
-// -------------------------------------------------------
 
 // -------------------------------------------------------
 // Columns that come from JOINs — displayed in the edit form
@@ -10,6 +8,28 @@ const TABLE_READONLY_COLS = {
     product: ['Supplier_Name'],   // comes from JOIN supplier
     orders:  ['Cust_Name'],       // comes from JOIN customer
 };
+
+// ==== LIVE TABLE SEARCH ====================================
+
+const searchInput = document.getElementById('search-bar');
+
+searchInput.addEventListener('input', (event) => {
+    const searchFilter = event.target.value.toLowerCase().trim();
+    // Target rows inside tbody specifically to protect the header row
+    const tableRows = document.querySelectorAll('#table-body tr');
+
+    tableRows.forEach((row) => {
+        // Combine all column text within this specific row into one string
+        const rowText = row.textContent.toLowerCase();
+
+        // If the query matches any column value, show the row
+        if (rowText.includes(searchFilter)) {
+        row.classList.remove('is-hidden');
+    } else {
+        row.classList.add('is-hidden');
+    }
+  });
+});
 
 // ==== TABLE RENDERER ====================================
 
@@ -34,7 +54,7 @@ function renderTable(containerId, rows)
     html += '</tr></thead>';
 
     // --- Body ---
-    html += '<tbody>';
+    html += '<tbody id="table-body">';
     rows.forEach(row =>
     {
         html += '<tr>';
@@ -292,6 +312,7 @@ function switchTable(btn, tableName)
 {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
+    document.getElementById('search-bar').value = ''; // ← clear live search
     runSelect(tableName, 'result-container');
 }
 
