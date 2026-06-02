@@ -147,8 +147,28 @@ $UPDATE_QUERIES = [
         'types' => 'ssssi',
     ],
     'update_supplier' => [
-        'sql'   => "UPDATE supplier SET Supply_Name = ? WHERE Supply_ID = ?",
-        'types' => 'si',
+        'sql'   => "UPDATE supplier
+                    SET Supply_Name = ?, Supply_PhoneNum = ?, Supply_City = ?, Supply_State = ?, Supply_ZipCode = ?
+                    WHERE Supply_ID = ?",
+        'types' => 'sssssi',
+    ],
+    'update_orders' => [
+        'sql'   => "UPDATE orders
+                    SET Order_Date = ?, Cust_ID = ?
+                    WHERE Order_ID = ?",
+        'types' => 'ssi',
+    ],
+    'update_payment' => [
+        'sql'   => "UPDATE payment
+                    SET Order_ID = ?, Pay_Method = ?, Pay_Amount = ?
+                    WHERE Pay_ID = ?",
+        'types' => 'isdi',
+    ],
+    'update_deliverystock' => [
+        'sql'   => "UPDATE deliverystock
+                    SET Prod_ID = ?, DStock_Date = ?, DStock_Stock = ?
+                    WHERE DStock_ID = ?",
+        'types' => 'isii',
     ],
 ];
 ?>
