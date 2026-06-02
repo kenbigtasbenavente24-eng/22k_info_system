@@ -1,19 +1,18 @@
 // -------------------------------------------------------
-// js/table-renderer.js — Renders JSON data as an HTML table
-// and provides helper functions for SELECT, DELETE, UPDATE.
-// Place this file in: htdocs/myapp/js/table-renderer.js
+// js/table-renderer.js
 // -------------------------------------------------------
 
+// -------------------------------------------------------
+// Columns that come from JOINs — displayed in the edit form
+// but excluded from UPDATE params. Key = query name (table).
+// -------------------------------------------------------
+const TABLE_READONLY_COLS = {
+    product: ['Supplier_Name'],   // comes from JOIN supplier
+    orders:  ['Cust_Name'],       // comes from JOIN customer
+};
 
 // ==== TABLE RENDERER ====================================
 
-/**
- * Turns an array of row objects into an HTML <table> and
- * injects it into the element matching `containerId`.
- *
- * @param {string} containerId  - id of the target <div>
- * @param {Array}  rows         - array of objects (from SELECT response)
- */
 function renderTable(containerId, rows)
 {
     const container = document.getElementById(containerId);
@@ -24,17 +23,13 @@ function renderTable(containerId, rows)
         return;
     }
 
-    // Build the header row from the keys of the first object
     const columns = Object.keys(rows[0]);
 
     let html = '<div class="table-scroll"><table>';
 
     // --- Header ---
     html += '<thead><tr>';
-    columns.forEach(col =>
-    {
-        html += `<th>${escapeHtml(col)}</th>`;
-    });
+    columns.forEach(col => { html += `<th>${escapeHtml(col)}</th>`; });
     html += '<th>Options</th>';
     html += '</tr></thead>';
 
@@ -45,12 +40,10 @@ function renderTable(containerId, rows)
         html += '<tr>';
         columns.forEach(col =>
         {
-            // Use ?? '' so null values display as empty string
             html += `<td>${escapeHtml(String(row[col] ?? ''))}</td>`;
         });
 
-        // don't break the onclick HTML attribute (escapeHtml was corrupting the JSON,
-        // causing JSON.parse to throw in ViewOptions).
+        // Encode row data as base64 so it's safe inside an HTML attribute
         const rowDataB64 = btoa(unescape(encodeURIComponent(JSON.stringify(row))));
         html += `<td><button onclick="ViewOptions('${rowDataB64}')">View</button></td>`;
         html += '</tr>';
@@ -60,65 +53,141 @@ function renderTable(containerId, rows)
     container.innerHTML = html;
 }
 
+// ==== VIEW / EDIT MODAL =================================
+
 /**
- * VIEW POP-UP BUTTONS: Update | Delete | Close
+ * Opens the modal in VIEW mode showing all fields of a row.
+ * The Update button switches the modal to EDIT mode in-place.
  */
 function ViewOptions(rowDataB64)
 {
-    const row = JSON.parse(decodeURIComponent(escape(atob(rowDataB64))));
+    const row     = JSON.parse(decodeURIComponent(escape(atob(rowDataB64))));
     const columns = Object.keys(row);
-    const primaryId = row[columns[0]];
+    const primaryId = row[columns[0]];  // first column is always the PK
 
-    // not from a #table-select element that doesn't exist in the HTML
-    const activeBtn = document.querySelector('.tab-btn.active');
-    const currentTable = activeBtn ? activeBtn.textContent.trim() : 'record';
+    // Get the current table name from the active tab's data-query attribute
+    const activeBtn    = document.querySelector('.tab-btn.active');
+    const currentTable = activeBtn ? activeBtn.dataset.query : 'record';
 
-    // Elements
-    const modal = document.getElementById('viewModal');
-    const modalTitle = document.getElementById('modalTitle');
+    // --- Modal elements ---
+    const modal        = document.getElementById('viewModal');
+    const modalTitle   = document.getElementById('modalTitle');
     const modalDetails = document.getElementById('modalDetails');
+    const btnUpdate    = document.getElementById('btnUpdate');
+    const btnDelete    = document.getElementById('btnDelete');
+    const btnClose     = document.getElementById('btnClose');
 
-    // Set up text details
-    let detailsText = '';
-    columns.forEach(col =>
+    // ---- Render the modal in VIEW mode ----
+    showViewMode();
+
+    function showViewMode()
     {
-        detailsText += `<strong>${escapeHtml(col)}:</strong> ${escapeHtml(String(row[col] ?? ''))}\n`;
-    });
+        // Title
+        modalTitle.innerText = `Manage ${currentTable.toUpperCase()} (ID: ${primaryId})`;
 
-    // Reset components & display modal
-    modalTitle.innerText = `Manage ${currentTable.toUpperCase()} (ID: ${primaryId})`;
-    modalDetails.style.display = 'block';
-    modalDetails.innerHTML = detailsText;
-    modal.style.display = 'flex';
+        // Set up text details
+        let detailsText = '';
+        columns.forEach(col =>
+        {
+            detailsText += `<strong>${escapeHtml(col)}:</strong> ${escapeHtml(String(row[col] ?? ''))}\n`;
+        });
 
-    // --- BUTTON EVENT LISTENERS ---
+        // Reset components & display modal
+        modalTitle.innerText = `Manage ${currentTable.toUpperCase()} (ID: ${primaryId})`;
+        modalDetails.style.display = 'block';
+        modalDetails.innerHTML = detailsText;
+        modal.style.display = 'flex';
 
-    // 1. Update Button
-    document.getElementById('btnUpdate').onclick = async function()
+        // Restore buttons to their original labels and visibility
+        btnUpdate.textContent  = 'Update Record';
+        btnDelete.textContent  = 'Delete Record';
+        btnDelete.className    = 'modal-btn danger';
+        btnDelete.style.display = '';
+
+        modal.style.display = 'flex';
+
+        // Update → switch to edit mode
+        btnUpdate.onclick = function() { showEditMode(); };
+
+        // Delete → run delete then close
+        btnDelete.onclick = function()
+        {
+            modal.style.display = 'none';
+            handleDelete(currentTable, primaryId);
+        };
+
+        // Close → just close
+        btnClose.onclick = function() { modal.style.display = 'none'; };
+    }
+
+    function showEditMode()
     {
-        modal.style.display = 'none';
-        const oldNameValue = row[columns[1]] || '';
-        await handleUpdate(currentTable, primaryId, oldNameValue);
-    };
+        const readonlyCols = TABLE_READONLY_COLS[currentTable] || [];
+        console.log('currentTable:', currentTable);
+        console.log('readonlyCols:', readonlyCols);   // should show ['Supplier_Name']
+        console.log('columns:', columns);             // check exact column name casing
 
-    // 2. Delete Button
-    document.getElementById('btnDelete').onclick = function()
-    {
-        modal.style.display = 'none';
-        handleDelete(currentTable, primaryId);
-    };
+        modalTitle.innerText = `Edit ${currentTable.toUpperCase()} (ID: ${primaryId})`;
 
-    // 3. Close Button
-    document.getElementById('btnClose').onclick = function()
-    {
-        modal.style.display = 'none';
-    };
+        let formHtml = '<div class="update-form">';
+        columns.forEach((col, i) =>
+        {
+            const currentVal = escapeHtml(String(row[col] ?? ''));
+            const isPK       = (i === 0);
+            const isReadonly = isPK || readonlyCols.includes(col); // ← joined cols are readonly
+
+            formHtml += `
+                <div class="form-field">
+                    <label for="edit-field-${i}">
+                        ${escapeHtml(col)}${isPK ? ' <span class="pk-label">(ID — read only)</span>' : ''}
+                        ${(!isPK && isReadonly) ? ' <span class="pk-label">(read only)</span>' : ''}
+                    </label>
+                    <input
+                        id="edit-field-${i}"
+                        type="text"
+                        value="${currentVal}"
+                        ${isReadonly ? 'readonly' : ''}
+                    >
+                </div>`;
+        });
+        formHtml += '</div>';
+        modalDetails.innerHTML = formHtml;
+
+        btnUpdate.textContent = 'Confirm Update';
+        btnDelete.textContent = 'Cancel';
+        btnDelete.className   = 'modal-btn cancel';
+
+        btnUpdate.onclick = async function()
+        {
+            const params = [];
+            columns.forEach((col, i) =>
+            {
+                if (i === 0) return;                    // skip PK
+                if (readonlyCols.includes(col)) return; // skip joined/readonly cols
+                params.push(document.getElementById(`edit-field-${i}`).value);
+            });
+            params.push(primaryId); // PK at the end for WHERE
+
+            const queryName = `update_${currentTable}`;
+            const affected  = await runUpdate(queryName, params);
+
+            if (affected > 0)
+                alert(`Updated ${affected} row(s) successfully.`);
+            else
+                alert('Update failed or no values were changed.');
+
+            modal.style.display = 'none';
+            runSelect(getActiveQueryName(), 'result-container');
+        };
+
+        btnDelete.onclick = function() { showViewMode(); };
+        btnClose.onclick  = function() { modal.style.display = 'none'; };
+    }
 }
 
-/**
- * Prevents XSS by escaping special HTML characters before
- * inserting any database value into the page.
- */
+
+// ==== HELPERS ===========================================
+
 function escapeHtml(str)
 {
     return str
@@ -129,25 +198,15 @@ function escapeHtml(str)
         .replace(/'/g, '&#039;');
 }
 
-
-// ==== API HELPERS =======================================
-
-/**
- * Returns the query name for the currently active tab.
- * Used by handleDelete / handleUpdate to refresh the right table.
- */
 function getActiveQueryName()
 {
     const activeBtn = document.querySelector('.tab-btn.active');
     return activeBtn ? activeBtn.dataset.query : 'customer';
 }
 
-/**
- * Runs a named SELECT query and renders the results as a table.
- *
- * @param {string} queryName    - key from $SELECT_QUERIES in queries.php
- * @param {string} containerId  - id of the <div> to render the table into
- */
+
+// ==== API HELPERS =======================================
+
 async function runSelect(queryName, containerId)
 {
     const container = document.getElementById(containerId);
@@ -172,13 +231,6 @@ async function runSelect(queryName, containerId)
     }
 }
 
-/**
- * Handles a DELETE action triggered from the modal.
- * Calls the appropriate named query, alerts the result, then refreshes.
- *
- * @param {string} tableName  - name of the table (used to pick the query key)
- * @param {number} primaryId  - id of the row to delete
- */
 async function handleDelete(tableName, primaryId)
 {
     const queryName = `delete_${tableName}`;
@@ -192,37 +244,6 @@ async function handleDelete(tableName, primaryId)
     runSelect(getActiveQueryName(), 'result-container');
 }
 
-/**
- * Handles an UPDATE action triggered from the modal.
- * Prompts the user for a new name, then calls the appropriate named query.
- *
- * @param {string} tableName    - name of the table (used to pick the query key)
- * @param {number} primaryId    - id of the row to update
- * @param {string} oldNameValue - current value shown as the prompt default
- */
-async function handleUpdate(tableName, primaryId, oldNameValue)
-{
-    const newName = prompt(`Enter new name for ID ${primaryId}:`, oldNameValue);
-    if (newName === null) return; // user cancelled
-
-    const queryName = `update_${tableName}`;
-    const affected  = await runUpdate(queryName, [newName, primaryId]);
-
-    if (affected >= 0)
-        alert(`Updated ${affected} row(s).`);
-    else
-        alert('Update failed. Check the console for details.');
-
-    runSelect(getActiveQueryName(), 'result-container');
-}
-
-/**
- * Runs a named DELETE query with the given parameter values.
- *
- * @param {string} queryName  - key from $DELETE_QUERIES in queries.php
- * @param {Array}  params     - values matching the ? placeholders in that query
- * @returns {Promise<number>} - number of affected rows, or -1 on error
- */
 async function runDelete(queryName, params = [])
 {
     try
@@ -234,12 +255,7 @@ async function runDelete(queryName, params = [])
         });
         const json = await res.json();
 
-        if (json.error)
-        {
-            console.error('DELETE error:', json.error);
-            return -1;
-        }
-
+        if (json.error) { console.error('DELETE error:', json.error); return -1; }
         return json.affected_rows;
     }
     catch (err)
@@ -249,13 +265,6 @@ async function runDelete(queryName, params = [])
     }
 }
 
-/**
- * Runs a named UPDATE query with the given parameter values.
- *
- * @param {string} queryName  - key from $UPDATE_QUERIES in queries.php
- * @param {Array}  params     - values matching the ? placeholders in that query
- * @returns {Promise<number>} - number of affected rows, or -1 on error
- */
 async function runUpdate(queryName, params = [])
 {
     try
@@ -265,14 +274,11 @@ async function runUpdate(queryName, params = [])
             headers: { 'Content-Type': 'application/json' },
             body:    JSON.stringify({ query: queryName, params }),
         });
-        const json = await res.json();
+        const text = await res.text(); // read raw text for debugging
+        console.log('UPDATE response text:', text); // log raw response
+        const json = text ? JSON.parse(text) : {}; // handle empty response gracefully
 
-        if (json.error)
-        {
-            console.error('UPDATE error:', json.error);
-            return -1;
-        }
-
+        if (json.error) { console.error('UPDATE error:', json.error); return -1; }
         return json.affected_rows;
     }
     catch (err)
