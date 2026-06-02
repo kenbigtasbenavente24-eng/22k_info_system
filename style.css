@@ -1,4 +1,4 @@
-/* ==== RESET & BASE =================================== */
+/* ==== RESET ========================================== */
 
 *,
 *::before,
@@ -10,12 +10,16 @@
 }
 
 
-/* ==== LAYOUT ========================================= */
+/* ==== BASE ============================================ */
 
 body
 {
+    font-family: Verdana, sans-serif;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #1a1a1a;
     background: #f5f5f3;
-    padding: 2rem 1.5rem;
+    padding: 0;
 }
 
 .wrap
@@ -24,38 +28,8 @@ body
     margin: 32px auto;
 }
 
-.table-scroll
-{
-    overflow-x: auto;
-}
-
 
 /* ==== TYPOGRAPHY ===================================== */
-
-body
-{
-    font-family: Verdana, sans-serif;
-    font-size: 13px;
-    line-height: 1.6;
-    color: #1a1a1a;
-    padding: 0;
-}
-
-h1
-{
-    font-family: 'Montserrat', sans-serif;
-    font-size: 28px;
-    font-weight: 800;
-    color: #20252d;
-    margin-bottom: 1rem;
-}
-
-.header-title
-{
-    color: #fff;
-    margin: 0;
-    padding: 0;
-}
 
 h2
 {
@@ -67,132 +41,14 @@ h2
     color: #555;
 }
 
-.page-title p{
+.page-title p
+{
     font-size: 14px;
     margin-bottom: 20px;
 }
 
-select,
-button
-{
-    font-family: "Courier New", monospace;
-    font-weight: 500;
-    white-space: nowrap;
-}
 
-button
-{
-    font-size: 13.5px;
-    color: #555;
-}
-
-select
-{
-    color: #1a1a1a;
-    font-size: 14px;
-}
-
-table
-{
-    font-family: Verdana, sans-serif;
-    color: #1a1a1a;
-    font-size: 13px;
-}
-
-#result-container p
-{
-    color: #888;
-    font-size: 13px;
-}
-
-td button
-{
-    font-size: 11.5px;
-    color: #475569;
-}
-
-th
-{
-    text-align: left;
-    font-size: 13px;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: #fff;
-}
-
-td
-{
-    color: #1e293b;
-}
-
-td,
-th
-{
-    text-align: left;
-}
-
-.loading-text
-{
-    color: #888;
-    font-size: 14px;
-}
-
-.error-text
-{
-    color: #c0392b;
-    font-size: 14px;
-}
-
-.modal-content h3
-{
-    font-family: 'Montserrat', sans-serif;
-    font-size: 16px;
-    font-weight: 700;
-    color: #1e293b;
-}
-
-#modalDetails
-{
-    text-align: left;
-    margin: 0 0 16px;
-    font-family: 'Roboto Mono', monospace;
-    font-size: 12.5px;
-    white-space: pre-wrap;
-    color: #334155;
-    line-height: 1.8;
-}
-
-.modal-btn
-{
-    font-family: 'Inter', sans-serif;
-    font-size: 13.5px;
-    font-weight: 600;
-}
-
-
-/* ==== HEADER ========================================= */
-
-.header
-{
-    text-align: center;
-    margin-bottom: 2rem;
-    background: #1e293b;
-    padding: 20px 15px;
-    margin: 0;
-}
-
-/* ==== CONTROLS ROW =================================== */
-
-.controls
-{
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 1.5rem;
-}
-
-/* ==== BUTTONS — BASE ================================= */
+/* ==== BUTTONS ======================================== */
 
 button
 {
@@ -202,6 +58,11 @@ button
     border-radius: 8px;
     background: transparent;
     cursor: pointer;
+    font-family: "Courier New", monospace;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: #555;
+    white-space: nowrap;
     transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
@@ -210,9 +71,6 @@ button:active
     transform: scale(0.98);
 }
 
-
-/* ==== BUTTONS — TABLE CELL "VIEW" ==================== */
-
 td button
 {
     height: 26px;
@@ -220,6 +78,8 @@ td button
     background: #f1f5f9;
     border: 1px solid #e2e8f0;
     border-radius: 6px;
+    font-size: 11.5px;
+    color: #475569;
 }
 
 td button:hover
@@ -228,35 +88,6 @@ td button:hover
     border-color: #cbd5e1;
 }
 
-/* ==== BUTTONS — DELETE & UPDATE (action buttons) ===== */
-
-/* Delete — red tone */
-button[onclick*="handleDelete"] 
-{
-    background: #fef2f2;
-    border-color: #fca5a5;
-    color: #b91c1c;
-}
-
-button[onclick*="handleDelete"]:hover 
-{
-    background: #fee2e2;
-    border-color: #f87171;
-}
-
-/* Update — amber/blue tone */
-button[onclick*="handleUpdate"] 
-{
-    background: #eff6ff;
-    border-color: #93c5fd;
-    color: #1d4ed8;
-}
-
-button[onclick*="handleUpdate"]:hover 
-{
-    background: #dbeafe;
-    border-color: #60a5fa;
-}
 
 /* ==== TABLE TABS / NAV =============================== */
 
@@ -323,6 +154,8 @@ button[onclick*="handleUpdate"]:hover
 #result-container p
 {
     padding: 1rem 1.25rem;
+    color: #888;
+    font-size: 13px;
 }
 
 #result-container .record-count,
@@ -332,7 +165,7 @@ button[onclick*="handleUpdate"]:hover
     color: #ffffff;
     font-size: 13px;
     font-weight: 500;
-    background: #38414e;  
+    background: #38414e;
 }
 
 
@@ -342,11 +175,9 @@ table
 {
     width: 100%;
     border-collapse: collapse;
-}
-
-thead tr
-{
-    border-bottom: 1px solid #e2e8f0;
+    font-family: Verdana, sans-serif;
+    font-size: 13px;
+    color: #1a1a1a;
 }
 
 th
@@ -355,16 +186,18 @@ th
     background: #38414e;
     white-space: nowrap;
     border-bottom: 1px solid #e0dfd8;
-}
-
-td,
-th
-{
-    padding: 9px 14px;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #fff;
 }
 
 td
 {
+    padding: 9px 14px;
+    text-align: left;
+    color: #1e293b;
     border-bottom: 1px solid #f1f5f9;
     vertical-align: middle;
 }
@@ -385,11 +218,15 @@ tbody tr:hover
 .loading-text
 {
     padding: 1rem 1.25rem;
+    color: #888;
+    font-size: 14px;
 }
 
 .error-text
 {
     padding: 1rem 1.25rem;
+    color: #c0392b;
+    font-size: 14px;
 }
 
 
@@ -429,6 +266,10 @@ tbody tr:hover
 
 .modal-content h3
 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e293b;
     margin-bottom: 8px;
 }
 
@@ -441,6 +282,13 @@ tbody tr:hover
 
 #modalDetails
 {
+    text-align: left;
+    margin: 0 0 16px;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 12.5px;
+    white-space: pre-wrap;
+    color: #334155;
+    line-height: 1.8;
     background: #f8fafc;
     border: 1px solid #e2e8f0;
     border-radius: 6px;
@@ -455,7 +303,7 @@ tbody tr:hover
 }
 
 
-/* ==== MODAL BUTTONS — VARIANTS ======================= */
+/* ==== MODAL BUTTONS ================================== */
 
 .modal-btn
 {
@@ -464,6 +312,9 @@ tbody tr:hover
     border-radius: 8px;
     cursor: pointer;
     border: 1px solid transparent;
+    font-family: 'Inter', sans-serif;
+    font-size: 13.5px;
+    font-weight: 600;
     transition: background 0.15s, border-color 0.15s;
 }
 
@@ -506,63 +357,60 @@ tbody tr:hover
     border-color: #cbd5e1;
 }
 
-/* ==== MODAL — UPDATE FORM ======================= */
 
-.update-form {
+/* ==== MODAL — UPDATE FORM ============================ */
+
+.update-form
+{
     display: flex;
     flex-direction: column;
     gap: 10px;
-    max-height: 55vh;   /* scroll if the table has many columns */
+    max-height: 55vh;
     overflow-y: auto;
     padding-right: 4px;
 }
- 
-.form-field {
+
+.form-field
+{
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
- 
-.form-field label {
+
+.form-field label
+{
     font-size: 0.8em;
     color: #555;
     text-transform: uppercase;
     letter-spacing: 0.04em;
 }
- 
-.form-field input {
+
+.form-field input
+{
     padding: 7px 10px;
     border: 1px solid #ccc;
     border-radius: 4px;
     font-size: 1em;
 }
- 
-/* Read-only PK field looks distinct */
-.form-field input[readonly] {
+
+.form-field input[readonly]
+{
     background: #f5f5f5;
     color: #999;
     cursor: not-allowed;
 }
- 
-/* Small label next to the PK column name */
-.pk-label {
+
+.pk-label
+{
     font-weight: normal;
     color: #aaa;
     text-transform: none;
     letter-spacing: 0;
 }
 
-/* ==== RESPONSIVE ====================================== */
 
-@media (max-width: 600px)
-{
-    .wrap        { padding: 1rem; }
-    .site-header { padding: 0 1rem; }
-    td, th       { padding: 10px 12px; }
-}
- 
- 
-/* ==== SITE NAV (Tables | Reports) ===================== */
+/* ==== SITE HEADER ==================================== */
+
 .site-header
 {
     display: flex;
@@ -605,7 +453,7 @@ tbody tr:hover
     display: flex;
     gap: 4px;
 }
- 
+
 .site-nav-btn
 {
     height: 32px;
@@ -620,14 +468,14 @@ tbody tr:hover
     cursor: pointer;
     transition: all 0.15s ease;
 }
- 
+
 .site-nav-btn:hover
 {
     background: rgba(255,255,255,.08);
     color: #fff;
     border-color: rgba(255,255,255,.25);
 }
- 
+
 .site-nav-btn.active
 {
     background: var(--green-500);
@@ -635,10 +483,12 @@ tbody tr:hover
     color: #fff;
     box-shadow: var(--shadow-green);
 }
- 
- 
-/* ==== REPORT CARD WRAPPER ==== */
-.report-card-wrapper {
+
+
+/* ==== REPORTS ======================================== */
+
+.report-card-wrapper
+{
     background-color: #ffffff;
     border: 1.5px solid var(--slate-200);
     border-radius: 10px;
@@ -649,21 +499,17 @@ tbody tr:hover
     flex-direction: column;
 }
 
-/* ==== REPORT HEADER ==== */
-.report-header {
+.report-header
+{
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 20px 24px;
-    background: transparent;
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
-    margin-bottom: 0;
     border-bottom: 1px solid var(--slate-200);
 }
 
-.report-title {
+.report-title
+{
     font-size: 15px;
     font-weight: 700;
     color: var(--slate-900);
@@ -671,15 +517,16 @@ tbody tr:hover
     margin: 0;
 }
 
-.report-subtitle {
+.report-subtitle
+{
     font-size: 12px;
     color: var(--slate-400);
     margin-top: 2px;
     margin-bottom: 0;
 }
 
-/* ==== EXPORT BUTTON ==== */
-.export-btn {
+.export-btn
+{
     display: inline-flex;
     align-items: center;
     gap: 7px;
@@ -696,43 +543,34 @@ tbody tr:hover
     transition: all 0.15s ease;
 }
 
-.export-btn:hover {
+.export-btn:hover
+{
     background: #192433;
-    text-decoration-color: #fff;
     transform: translateY(-1px);
 }
 
-.export-btn:active {
+.export-btn:active
+{
     transform: scale(0.98);
 }
 
-/* ==== TABLE AREA ==== */
-#report-container {
-    width: 100%;
-    margin: 0;
-    padding: 0;
-    background: transparent;
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
-}
-
-#report-container p {
+#report-container p
+{
     padding: 1.25rem 1.5rem;
     color: var(--slate-400);
     font-size: 14px;
     margin: 0;
 }
 
-/* ====TABLE STYLING ==== */
-#report-container table {
+#report-container table
+{
     width: 100%;
     border-collapse: collapse;
     margin: 0;
-    border: none;
 }
 
-#report-container th {
+#report-container th
+{
     background-color: #374151;
     color: #ffffff;
     padding: 14px 24px;
@@ -743,12 +581,24 @@ tbody tr:hover
     border: none;
 }
 
-#report-container td {
+#report-container td
+{
     padding: 16px 24px;
     border-bottom: 1px solid #f3f4f6;
     color: #374151;
     background-color: #ffffff;
 }
 
-#report-container tr:last-child td {
-    border-bottom: none;}
+#report-container tr:last-child td
+{
+    border-bottom: none;
+}
+
+
+/* ==== RESPONSIVE ===================================== */
+
+@media (max-width: 600px)
+{
+    .site-header { padding: 0 1rem; }
+    td, th       { padding: 10px 12px; }
+}
