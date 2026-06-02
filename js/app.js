@@ -1,9 +1,6 @@
-// js/table-renderer.js
+// js/app.js
 
-// -------------------------------------------------------
-// Columns that come from JOINs — displayed in the edit form
-// but excluded from UPDATE params. Key = query name (table).
-// -------------------------------------------------------
+// Columns that come from JOINs — displayed in the edit form but not editable since they don't exist in the main table.
 const TABLE_READONLY_COLS = {
     product: ['Supplier_Name'],   // comes from JOIN supplier
     orders:  ['Cust_Name'],       // comes from JOIN customer
