@@ -1,15 +1,5 @@
 <?php
-// -------------------------------------------------------
 // api/select.php — Runs a named SELECT query
-// Place this file in: htdocs/myapp/api/select.php
-//
-// Usage (GET):
-//   fetch('api/select.php?query=get_all_items')
-//
-// Response (JSON):
-//   { "data": [ {col: val, ...}, ... ] }
-//   { "error": "message" }           ← on failure
-// -------------------------------------------------------
 
 header('Content-Type: application/json');
 
@@ -26,8 +16,23 @@ if (!array_key_exists($query_name, $SELECT_QUERIES)) {
     exit;
 }
 
+$queryDef = $SELECT_QUERIES[$query_name];
 $conn = get_connection();
-$result = $conn->query($SELECT_QUERIES[$query_name]);
+
+// Parameterized query (e.g. payment_by_order)
+if (is_array($queryDef))
+{
+    $id   = $_GET['id'] ?? null;
+    $stmt = $conn->prepare($queryDef['sql']);
+    $stmt->bind_param($queryDef['types'], $id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+}
+// Plain query (all other selects)
+else
+{
+    $result = $conn->query($queryDef);
+}
 
 if (!$result) {
     http_response_code(500);

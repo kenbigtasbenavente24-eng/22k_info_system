@@ -1,5 +1,5 @@
 <?php
-// update.php
+// api/update.php — Runs a named UPDATE query with parameters from the request body
 
 ini_set('display_errors', 0);
 error_reporting(E_ALL);

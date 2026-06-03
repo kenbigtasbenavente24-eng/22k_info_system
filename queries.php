@@ -18,18 +18,19 @@ $SELECT_QUERIES = [
         "SELECT * FROM supplier",
 
     'orders'   =>
-        "SELECT o.Order_ID, o.Order_Date, o.Cust_ID, c.Cust_Name
+        "SELECT o.Order_ID, o.Order_Date, o.Cust_ID, c.Cust_Name, p.Pay_ID
         FROM orders o
-        JOIN customer c ON c.Cust_ID = o.Cust_ID",
-
-    'payment'  =>
-        "SELECT * FROM payment",
+        JOIN customer c ON c.Cust_ID = o.Cust_ID
+        LEFT JOIN payment p ON p.Order_ID = o.Order_ID
+        ORDER BY o.Order_Date DESC",
 
     'deliverystock' =>
-        "SELECT * FROM deliverystock",
+        "SELECT ds.DStock_ID, ds.DStock_Date, ds.DStock_Stock, ds.Prod_ID, p.Prod_Name, p.Prod_Price
+        FROM deliverystock ds
+        JOIN product p ON p.Prod_ID = ds.Prod_ID",
 
     
-     // ==== REPORT ================================
+    // ==== REPORT ================================
  
     //Customer Order History Report
     //Shows each customer, their orders, payment_reference and amount
@@ -77,6 +78,24 @@ $SELECT_QUERIES = [
          FROM supplier s
          JOIN product p ON p.Supply_ID = s.Supply_ID
          ORDER BY s.Supply_Name, p.Prod_Name",
+
+    // ==== ORDER / PURCHASE LIST ================================
+
+    'list_by_order' => [
+        'sql'   => "SELECT od.OrDet_ID, pr.Prod_Name, od.OrDet_Quantity, od.OrDet_UnitPrice,
+                    (od.OrDet_Quantity * od.OrDet_UnitPrice) AS Total_Price
+                    FROM orders o
+                    JOIN orderdetails od ON od.Order_ID = o.Order_ID
+                    JOIN deliverystock ds ON ds.DStock_ID = od.DStock_ID
+                    JOIN product pr ON pr.Prod_ID = ds.Prod_ID
+                    WHERE o.Order_ID = ?",
+        'types' => 'i',
+    ],
+
+    'payment_by_order' => [
+        'sql'   => "SELECT * FROM payment WHERE Order_ID = ?",
+        'types' => 'i',
+    ],
 ];
 
 // ==== DELETE ============================================
@@ -89,32 +108,22 @@ $DELETE_QUERIES = [
         'sql'   => "DELETE FROM customer WHERE Cust_ID = ?",
         'types' => 'i',
     ],
-
     'delete_product' => [
         'sql'   => "DELETE FROM product WHERE Prod_ID = ?",
         'types' => 'i',
     ],
-
     'delete_supplier' => [
         'sql'   => "DELETE FROM supplier WHERE Supply_ID = ?",
         'types' => 'i',
     ],
-
     'delete_orders' => [
         'sql'   => "DELETE FROM orders WHERE Order_ID = ?",
         'types' => 'i',
     ],
-
-    'delete_payment' => [
-        'sql'   => "DELETE FROM payment WHERE Payment_ID = ?",
-        'types' => 'i',
-    ],
-
     'delete_deliverystock' => [
         'sql'   => "DELETE FROM deliverystock WHERE DStock_ID = ?",
         'types' => 'i',
     ],
-
 ];
 
 $UPDATE_QUERIES = [
@@ -130,6 +139,12 @@ $UPDATE_QUERIES = [
                     WHERE Prod_ID = ?",
         'types' => 'ssssi',
     ],
+    'update_payment' => [
+        'sql'   => "UPDATE payment
+                    SET Order_ID = ?, Pay_Method = ?, Pay_Amount = ?
+                    WHERE Pay_ID = ?",
+        'types' => 'ssdi',
+    ],
     'update_supplier' => [
         'sql'   => "UPDATE supplier
                     SET Supply_Name = ?, Supply_PhoneNum = ?, Supply_City = ?, Supply_State = ?, Supply_ZipCode = ?
@@ -142,17 +157,17 @@ $UPDATE_QUERIES = [
                     WHERE Order_ID = ?",
         'types' => 'ssi',
     ],
-    'update_payment' => [
-        'sql'   => "UPDATE payment
-                    SET Order_ID = ?, Pay_Method = ?, Pay_Amount = ?
-                    WHERE Pay_ID = ?",
-        'types' => 'isdi',
-    ],
     'update_deliverystock' => [
         'sql'   => "UPDATE deliverystock
-                    SET Prod_ID = ?, DStock_Date = ?, DStock_Stock = ?
+                    SET DStock_Date = ?, DStock_Stock = ?, Prod_ID = ?
                     WHERE DStock_ID = ?",
-        'types' => 'isii',
+        'types' => 'siii',
+    ],
+    'update_orderdetail' => [
+        'sql'   => "UPDATE orderdetails
+                    SET OrDet_Quantity = ?, OrDet_UnitPrice = ?
+                    WHERE OrDet_ID = ?",
+        'types' => 'idi',
     ],
 ];
 

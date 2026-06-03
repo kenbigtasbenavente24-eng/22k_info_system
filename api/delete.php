@@ -1,19 +1,6 @@
 <?php
-// -------------------------------------------------------
 // api/delete.php — Runs a named DELETE query
-// Place this file in: htdocs/myapp/api/delete.php
-//
-// Usage (POST, JSON body):
-//   fetch('api/delete.php', {
-//     method: 'POST',
-//     headers: { 'Content-Type': 'application/json' },
-//     body: JSON.stringify({ query: 'delete_item_by_id', params: [42] })
-//   })
-//
-// Response (JSON):
-//   { "affected_rows": 1 }
-//   { "error": "message" }   ← on failure
-// -------------------------------------------------------
+
 header('Content-Type: application/json');
 
 require_once '../db.php';
