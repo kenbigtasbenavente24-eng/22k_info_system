@@ -122,6 +122,17 @@
 
 </div><!-- /.wrap -->
 
+<!-- 1. Foundations — no dependencies -->
+<script src="js/utils.js"></script>
+<script src="js/api.js"></script>
+ 
+<!-- 2. Features — each depends on utils + api -->
+<script src="js/search.js"></script>
+<script src="js/table.js"></script>
+<script src="js/modal.js"></script>
+<script src="js/reports.js"></script>
+ 
+<!-- 3. Entry point — fires after everything above is ready -->
 <script src="js/app.js"></script>
 
 </body>
