@@ -102,6 +102,7 @@ td button:hover
 
 #search-bar {
     flex: 1;
+    height: 38px;
     min-width: 500px;
     padding: 8px 12px;
     border: 1px solid #e2e8f0;
@@ -111,22 +112,68 @@ td button:hover
     box-sizing: border-box;
 }
 
-#btn-add {
-    flex-shrink: 0;
-    white-space: nowrap;
-    background: #38a169;
-    border: 1px solid #38a169;
-    border-radius: 8px;
-    color: #fff;
-    font-family: 'Inter', sans-serif;
-    font-size: 14px;
-    font-weight: 550;
-    padding: 8px 24px;
-    cursor: pointer;
-}
-
 .is-hidden {
     display: none !important;
+}
+
+.search-row
+{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+ 
+.search-row #search-bar
+{
+    margin-bottom: 0;   /* remove the old standalone margin */
+    flex: 1;
+    max-width: 400px;
+}
+ 
+#btn-add
+{
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 38px;
+    padding: 0 16px;
+    background: #16a34a; 
+    border: 1px solid #15803d;
+    border-radius: 8px;
+    color: #ffffff;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, border-color 0.15s;
+}
+ 
+.add-btn:hover
+{
+    background: #15803d;
+    border-color: #166534;
+}
+ 
+.add-btn:active
+{
+    transform: scale(0.98);
+}
+ 
+/* ==== MODAL — CONFIRM ADD BUTTON (green, mirrors .warning style) */
+ 
+.modal-btn.confirm-add
+{
+    background: #f0fdf4;
+    border-color: #86efac;
+    color: #15803d;
+}
+ 
+.modal-btn.confirm-add:hover
+{
+    background: #dcfce7;
+    border-color: #4ade80;
 }
 
 

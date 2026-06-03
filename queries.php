@@ -155,4 +155,42 @@ $UPDATE_QUERIES = [
         'types' => 'isii',
     ],
 ];
+
+$INSERT_QUERIES = [
+    'insert_customer' => [
+        'sql'   => "INSERT INTO customer (Cust_Name, Cust_Address, Cust_PhoneNum)
+                    VALUES (?, ?, ?)",
+        'types' => 'sss',
+    ],
+ 
+    'insert_product' => [
+        'sql'   => "INSERT INTO product (Prod_Name, Prod_Stock, Prod_Price, Supply_ID)
+                    VALUES (?, ?, ?, ?)",
+        'types' => 'sddi',   // name, stock (decimal), price (decimal), supplier FK (int)
+    ],
+ 
+    'insert_supplier' => [
+        'sql'   => "INSERT INTO supplier (Supply_Name, Supply_PhoneNum, Supply_City, Supply_State, Supply_ZipCode)
+                    VALUES (?, ?, ?, ?, ?)",
+        'types' => 'sssss',
+    ],
+ 
+    'insert_orders' => [
+        'sql'   => "INSERT INTO orders (Order_Date, Cust_ID)
+                    VALUES (?, ?)",
+        'types' => 'si',
+    ],
+ 
+    'insert_payment' => [
+        'sql'   => "INSERT INTO payment (Order_ID, Pay_Method, Pay_Amount)
+                    VALUES (?, ?, ?)",
+        'types' => 'isd',
+    ],
+ 
+    'insert_deliverystock' => [
+        'sql'   => "INSERT INTO deliverystock (Prod_ID, DStock_Date, DStock_Stock)
+                    VALUES (?, ?, ?)",
+        'types' => 'isi',
+    ],
+];
 ?>
