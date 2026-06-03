@@ -14,12 +14,10 @@ const TABLE_READONLY_COLS = {
 };
 
 // Readonly columns for the related records (orderdetails) edit form.
-// Prod_Name is a JOIN column; Total_Price is computed — neither exists on orderdetails.
 const RELATED_READONLY_COLS = ['Prod_Name', 'Total_Price'];
 
 // -------------------------------------------------------
 // Field definitions for the Add modal.
-// Each entry maps to one ? placeholder in INSERT_QUERIES.
 // -------------------------------------------------------
 const TABLE_INSERT_FIELDS = {
     customer: [
@@ -44,6 +42,10 @@ const TABLE_INSERT_FIELDS = {
         { label: 'Order Date',     key: 'Order_Date',    type: 'date'   },
         { label: 'Customer ID',    key: 'Cust_ID',       type: 'number' },
     ],
+    purchase: [
+        { label: 'Purchase Date',  key: 'Pur_Date',      type: 'date'   },
+        { label: 'Supplier ID',    key: 'Supply_ID',     type: 'number' },
+    ],
     payment: [
         { label: 'Order ID',       key: 'Order_ID',      type: 'number' },
         { label: 'Payment Method', key: 'Pay_Method',    type: 'text'   },
@@ -62,15 +64,11 @@ const TABLES_WITH_RELATED = ['orders', 'purchase'];
 
 // ==== VIEW / EDIT MODAL =================================
 
-/**
- * Opens the modal in VIEW mode showing all fields of a row.
- * The Update button switches the modal to EDIT mode in-place.
- */
 function ViewOptions(rowDataB64)
 {
     const row       = JSON.parse(decodeURIComponent(escape(atob(rowDataB64))));
     const columns   = Object.keys(row);
-    const primaryId = row[columns[0]];  // first column is always the PK
+    const primaryId = row[columns[0]];
 
     const activeBtn    = document.querySelector('.tab-btn.active');
     const currentTable = activeBtn ? activeBtn.dataset.query : 'record';
@@ -78,6 +76,7 @@ function ViewOptions(rowDataB64)
     const modal        = document.getElementById('viewModal');
     const modalTitle   = document.getElementById('modalTitle');
     const modalDetails = document.getElementById('modalDetails');
+    const subActions   = document.getElementById('modalSubActions');
     const btnsModal    = document.querySelector('.modal-buttons');
 
     const hasRelated = TABLES_WITH_RELATED.includes(currentTable);
@@ -85,65 +84,316 @@ function ViewOptions(rowDataB64)
     showViewMode();
 
     // ---- VIEW MODE ----
-    // Always redraws btnsModal.innerHTML so buttons are fresh, live DOM nodes.
-    // This is what prevents the stale-reference bug when returning from edit mode.
-    function showViewMode()
+    async function showViewMode()
     {
         modalTitle.innerText = `Manage ${currentTable.toUpperCase()} (ID: ${primaryId})`;
 
-        let detailsText = '';
+        let formHtml = '<div style="display: flex; flex-direction: column; gap: 10px; padding: 6px 0; font-size: 14.5px; color: #1e293b; font-family: system-ui, sans-serif;">';
         columns.forEach(col =>
         {
-            detailsText += `<strong>${escapeHtml(col)}:</strong> ${escapeHtml(String(row[col] ?? ''))}\n`;
+            formHtml += `
+                <div style="line-height: 1.5; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px;">
+                    <strong style="color: #475569;">${escapeHtml(col)}:</strong> 
+                    <span style="color: #0f172a; margin-left: 4px;">${escapeHtml(String(row[col] ?? ''))}</span>
+                </div>`;
         });
+        
+        // Placeholder container for asynchronous totals and payment extensions
+        formHtml += `<div id="dynamicModalExtensions"></div>`;
+        formHtml += '</div>';
 
         modalDetails.style.display = 'block';
-        modalDetails.innerHTML     = detailsText;
+        modalDetails.innerHTML     = formHtml;
         modal.style.display        = 'flex';
 
-        // Reset modal width in case it was expanded for the related records table.
         document.querySelector('#viewModal .modal-content').style.maxWidth = '450px';
 
-        // Render the correct button set for this table.
-        // Orders/purchase get an extra "View Related Records" button.
         if (hasRelated)
         {
-            btnsModal.innerHTML = `
-                <button id="btnViewRelated" class="modal-btn info">View Related Records</button>
-                <button id="btnUpdate"      class="modal-btn warning">Update Record</button>
-                <button id="btnDelete"      class="modal-btn danger">Delete Record</button>
-                <button id="btnClose"       class="modal-btn cancel">Close</button>
+            subActions.innerHTML = `
+                <button id="btnViewRelated" class="modal-btn info" style="width: 100%; margin: 0; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 6px; height: 38px; font-weight: 600;">
+                    <i class="fa-solid fa-list-ol"></i> View Related Records
+                </button>
             `;
-            document.getElementById('btnViewRelated').onclick = function ()
-            {
+            subActions.style.display = 'block';
+            document.getElementById('btnViewRelated').onclick = function () {
                 showRelatedRecords(currentTable, primaryId);
             };
         }
         else
         {
-            btnsModal.innerHTML = `
-                <button id="btnUpdate" class="modal-btn warning">Update Record</button>
-                <button id="btnDelete" class="modal-btn danger">Delete Record</button>
-                <button id="btnClose"  class="modal-btn cancel">Close</button>
-            `;
+            subActions.innerHTML = '';
+            subActions.style.display = 'none';
         }
 
-        // Wire up buttons after innerHTML is set so they're guaranteed to exist.
+        btnsModal.innerHTML = `
+            <button id="btnUpdate" class="modal-btn warning">Update Record</button>
+            <button id="btnDelete" class="modal-btn danger">Delete Record</button>
+            <button id="btnClose"  class="modal-btn cancel">Close</button>
+        `;
+
         document.getElementById('btnUpdate').onclick = function () { showEditMode(); };
         document.getElementById('btnDelete').onclick = function ()
         {
             modal.style.display = 'none';
+            subActions.style.display = 'none';
             handleDelete(currentTable, primaryId);
         };
-        document.getElementById('btnClose').onclick = function () { modal.style.display = 'none'; };
+        document.getElementById('btnClose').onclick = function () { 
+            modal.style.display = 'none'; 
+            subActions.style.display = 'none';
+        };
+
+        // Asynchronously compile totals and lookup active payment information
+        await loadModalExtensions();
+    }
+
+    // ---- EXTENSION MANAGER: TOTAL AMOUNT & PAYMENTS ----
+    async function loadModalExtensions()
+    {
+        const extContainer = document.getElementById('dynamicModalExtensions');
+        if (!extContainer) return;
+
+        let extensionsHtml = '';
+
+        // 1. Calculate & Append Total Breakdown Amounts
+        if (currentTable === 'orders' || currentTable === 'purchase')
+        {
+            const queryName = currentTable === 'orders' ? 'list_by_order' : 'list_by_purchase';
+            try
+            {
+                const res = await fetch(`api/select.php?query=${queryName}&id=${encodeURIComponent(primaryId)}`);
+                const json = await res.json();
+                
+                let totalAmount = 0;
+                if (json.data && json.data.length > 0)
+                {
+                    json.data.forEach(item => {
+                        const qty = parseFloat(item.OrDet_Quantity || item.PurDet_Quantity || item.Quantity || 0);
+                        const price = parseFloat(item.OrDet_UnitPrice || item.PurDet_UnitPrice || item.UnitPrice || item.Prod_Price || 0);
+                        const lineTotal = item.Total_Price ? parseFloat(item.Total_Price) : (qty * price);
+                        totalAmount += lineTotal;
+                    });
+                }
+                
+                extensionsHtml += `
+                    <div style="line-height: 1.5; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; margin-top: 4px; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                        <strong style="color: #1e3a8a;"><i class="fa-solid fa-calculator" style="margin-right:4px;"></i> Total Amount:</strong> 
+                        <span style="color: #1e3a8a; font-weight: 700; font-size: 15px;">₱${totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+                `;
+            }
+            catch (e) { console.error("Error calculating total amount:", e); }
+        }
+
+        // 2. Fetch, Bind, and Handle Payment Sub-forms
+        if (currentTable === 'orders')
+        {
+            try
+            {
+                const res = await fetch(`api/select.php?query=payment_by_order&id=${encodeURIComponent(primaryId)}`);
+                const json = await res.json();
+
+                const payment = (json.data && json.data.length > 0) ? json.data[0] : null;
+
+                // Grab the total amount already computed above so we can compare
+                // Parse it back from the rendered HTML, or re-derive from the items fetch
+                let totalAmount = 0;
+                const totalAmountRes  = await fetch(`api/select.php?query=list_by_order&id=${encodeURIComponent(primaryId)}`);
+                const totalAmountJson = await totalAmountRes.json();
+                if (totalAmountJson.data && totalAmountJson.data.length > 0)
+                {
+                    totalAmountJson.data.forEach(item => {
+                    const lineTotal = item.Total_Price ? parseFloat(item.Total_Price) : 0;
+                    totalAmount += lineTotal;
+                    });
+                }
+
+                extensionsHtml += `
+                    <div style="margin-top: 12px; padding: 10px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; font-family: system-ui, sans-serif;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <strong style="color: #166534; font-size: 13.5px;">
+                                <i class="fa-solid fa-credit-card"></i> Payment Information
+                            </strong>
+                    `;
+
+                if (payment)
+                {
+                    const amountPaid   = parseFloat(payment.Pay_Amount);
+                    const isFullyPaid  = amountPaid >= totalAmount && totalAmount > 0;
+                    const balance      = totalAmount - amountPaid;
+
+                    const statusColor  = isFullyPaid ? '#166534' : '#92400e';
+                    const statusBg     = isFullyPaid ? '#dcfce7' : '#fef3c7';
+                    const statusBorder = isFullyPaid ? '#86efac' : '#fcd34d';
+                    const statusIcon   = isFullyPaid ? 'fa-circle-check' : 'fa-clock';
+                    const statusLabel  = isFullyPaid ? 'Fully Paid' : 'Partially Paid / Pending';
+
+                    extensionsHtml += `
+                        <button id="btnTriggerPaymentEdit"
+                            style="height:24px; padding:0 10px; background:#e2e8f0; border:1px solid #cbd5e1;
+                                border-radius:4px; font-size:11.5px; color:#475569; cursor:pointer; font-weight:500;">
+                            <i class="fa-solid fa-pen-to-square"></i> Update
+                        </button>
+                        </div>
+
+                        <!-- Status Badge -->
+                        <div style="display:inline-flex; align-items:center; gap:5px; padding:3px 10px;
+                                background:${statusBg}; border:1px solid ${statusBorder};
+                                border-radius:999px; font-size:11.5px; font-weight:600;
+                                color:${statusColor}; margin-bottom:8px;">
+                            <i class="fa-solid ${statusIcon}"></i> ${statusLabel}
+                        </div>
+
+                        <!-- Payment Details -->
+                        <div style="font-size:13px; color:#14532d; line-height:1.8;">
+                        <div style="display:flex; justify-content:space-between;">
+                                <span><strong>Payment ID:</strong></span>
+                            <span>${escapeHtml(String(payment.Pay_ID))}</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between;">
+                            <span><strong>Method:</strong></span>
+                            <span>${escapeHtml(payment.Pay_Method)}</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between;">
+                            <span><strong>Amount Paid:</strong></span>
+                            <span style="font-weight:700;">
+                                ₱${amountPaid.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between;">
+                            <span><strong>Order Total:</strong></span>
+                            <span>₱${totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        </div>
+                        </div>
+                        `;
+
+                    if (!isFullyPaid)
+                    {
+                        extensionsHtml += `
+                            <div style="display:flex; justify-content:space-between; color:#b45309; margin-top:2px;
+                                border-top:1px dashed #fcd34d; padding-top:4px;">
+                                <span><strong>Remaining Balance:</strong></span>
+                                <span style="font-weight:700;">
+                                    ₱${balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </span>
+                            </div>
+                        `;
+                    }
+
+                        extensionsHtml += `</div>`;
+                    }
+                    else
+                    {
+                        extensionsHtml += `
+                            <button id="btnTriggerPaymentAdd"
+                                style="height:24px; padding:0 10px; background:#16a34a; border:none;
+                                    border-radius:4px; font-size:11.5px; color:#fff; cursor:pointer; font-weight:500;">
+                                <i class="fa-solid fa-plus"></i> Add Payment
+                            </button>
+                        </div>
+                        <div style="font-size:13px; color:#166534; font-style:italic;">
+                            No payment recorded for this order yet.
+                        </div>
+                        `;
+                    }
+
+                extensionsHtml += `
+                    <div id="inlinePaymentForm" style="display:none; margin-top:10px;
+                        padding-top:10px; border-top:1px dashed #bbf7d0;"></div>
+                     </div>
+                    `;
+
+                extContainer.innerHTML = extensionsHtml;
+
+                if (payment) {
+                    document.getElementById('btnTriggerPaymentEdit').onclick = function () {
+                        openInlinePaymentForm(true, payment);
+                };
+                } else {
+                    document.getElementById('btnTriggerPaymentAdd').onclick = function () {
+                        openInlinePaymentForm(false, null);
+                        };
+                    }
+                }
+                catch (e)
+                {
+                    console.error("Error fetching payment details:", e);
+                    extContainer.innerHTML = extensionsHtml;
+                }
+            }
+        else
+        {
+            extContainer.innerHTML = extensionsHtml;
+        }
+    }
+
+    // ---- INLINE PAYMENT HANDLER ACTION FORM ----
+    function openInlinePaymentForm(isEdit, paymentObj)
+    {
+        const formDiv = document.getElementById('inlinePaymentForm');
+        if (!formDiv) return;
+
+        const currentMethod = isEdit ? paymentObj.Pay_Method : '';
+        const currentAmount = isEdit ? paymentObj.Pay_Amount : '';
+
+        formDiv.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div>
+                    <label style="display:block; font-size:11.5px; color:#14532d; font-weight:600; margin-bottom:2px;">Payment Method</label>
+                    <input type="text" id="inlinePayMethod" value="${escapeHtml(currentMethod)}" placeholder="e.g., Cash, GCash, Bank Transfer" style="width:100%; height:30px; padding:0 8px; border:1px solid #cbd5e1; border-radius:4px; font-size:12px; box-sizing:border-box;">
+                </div>
+                <div>
+                    <label style="display:block; font-size:11.5px; color:#14532d; font-weight:600; margin-bottom:2px;">Amount Paid (₱)</label>
+                    <input type="number" id="inlinePayAmount" value="${currentAmount}" step="0.01" min="0" placeholder="0.00" style="width:100%; height:30px; padding:0 8px; border:1px solid #cbd5e1; border-radius:4px; font-size:12px; box-sizing:border-box;">
+                </div>
+                <div style="display: flex; gap: 6px; justify-content: flex-end; margin-top: 4px;">
+                    <button id="btnSaveInlinePayment" style="height:26px; padding:0 12px; background:#16a34a; border:none; border-radius:4px; color:#fff; font-size:11.5px; font-weight:600; cursor:pointer;">Save Payment</button>
+                    <button id="btnCancelInlinePayment" style="height:26px; padding:0 12px; background:#cbd5e1; border:none; border-radius:4px; color:#334155; font-size:11.5px; cursor:pointer;">Cancel</button>
+                </div>
+            </div>
+        `;
+
+        formDiv.style.display = 'block';
+
+        document.getElementById('btnCancelInlinePayment').onclick = function() {
+            formDiv.style.display = 'none';
+            formDiv.innerHTML = '';
+        };
+
+        document.getElementById('btnSaveInlinePayment').onclick = async function() {
+            const method = document.getElementById('inlinePayMethod').value.trim();
+            const amount = document.getElementById('inlinePayAmount').value.trim();
+
+            if (!method || !amount) {
+                alert("Please complete both input fields.");
+                return;
+            }
+
+            if (isEdit) {
+                const affected = await runUpdate('update_payment', [method, amount, paymentObj.Pay_ID]);
+                if (affected > 0) alert("Payment updated successfully.");
+                else alert("Payment layout processed successfully.");
+            } else {
+                const result = await runInsert('insert_payment', [primaryId, method, amount]);
+                if (result && result.affected_rows > 0) alert("Payment saved successfully!");
+                else alert("Failed to save payment.");
+            }
+
+            modal.style.display = 'none';
+            subActions.style.display = 'none';
+            runSelect(getActiveQueryName(), 'result-container');
+        };
     }
 
     // ---- EDIT MODE ----
     function showEditMode()
     {
         const readonlyCols = TABLE_READONLY_COLS[currentTable] || [];
-
         modalTitle.innerText = `Edit ${currentTable.toUpperCase()} (ID: ${primaryId})`;
+
+        subActions.innerHTML = '';
+        subActions.style.display = 'none';
 
         let formHtml = '<div class="update-form">';
         columns.forEach((col, i) =>
@@ -169,7 +419,6 @@ function ViewOptions(rowDataB64)
         formHtml += '</div>';
         modalDetails.innerHTML = formHtml;
 
-        // Redraw buttons for edit mode — "Cancel" goes back to view mode, not close.
         btnsModal.innerHTML = `
             <button id="btnUpdate" class="modal-btn warning">Confirm Update</button>
             <button id="btnDelete" class="modal-btn cancel">Cancel</button>
@@ -198,7 +447,6 @@ function ViewOptions(rowDataB64)
             runSelect(getActiveQueryName(), 'result-container');
         };
 
-        // Cancel -> return to view mode (not close), so the user can still delete etc.
         document.getElementById('btnDelete').onclick = function () { showViewMode(); };
         document.getElementById('btnClose').onclick  = function () { modal.style.display = 'none'; };
     }
@@ -207,20 +455,12 @@ function ViewOptions(rowDataB64)
     async function showRelatedRecords(tableName, id)
     {
         modalTitle.innerText   = `Records List — ${tableName.toUpperCase()} ID: ${id}`;
-        modalDetails.innerHTML = '<p style="color:#888;font-size:13px;padding:15px;">Loading...</p>';
+        modalDetails.innerHTML = '<p style="color:#888;font-size:13px;">Loading...</p>';
 
-        // Set up bounded sticky layout frame to avoid off-screen pushing
-        const modalContent = document.querySelector('#viewModal .modal-content');
-        modalContent.style.maxWidth  = '800px';
-        modalContent.style.width     = '95%';
-        modalContent.style.maxHeight = '85vh';
-        modalContent.style.display   = 'flex';
-        modalContent.style.flexDirection = 'column';
+        subActions.innerHTML = '';
+        subActions.style.display = 'none';
 
-        modalDetails.style.overflowY = 'auto';
-        modalDetails.style.flex      = '1';
-        modalDetails.style.margin    = '0';
-        modalDetails.style.padding   = '0 5px';
+        document.querySelector('#viewModal .modal-content').style.maxWidth = '800px';
 
         btnsModal.innerHTML = `
             <button id="btnBack"  class="modal-btn warning">Back</button>
@@ -229,275 +469,49 @@ function ViewOptions(rowDataB64)
         document.getElementById('btnBack').onclick  = function () { showViewMode(); };
         document.getElementById('btnClose').onclick = function ()
         {
-            modalContent.style.maxWidth  = '450px';
-            modalContent.style.maxHeight = '';
-            modal.style.display          = 'none';
+            document.querySelector('#viewModal .modal-content').style.maxWidth = '450px';
+            modal.style.display = 'none';
         };
 
         try
         {
-            // Fetch both datasets concurrently
-            const [resItems, resPay] = await Promise.all([
-                fetch(`api/select.php?query=list_by_order&id=${encodeURIComponent(id)}`),
-                fetch(`api/select.php?query=payment_by_order&id=${encodeURIComponent(id)}`)
-            ]);
+            const queryName = tableName === 'orders' ? 'list_by_order' : 'list_by_purchase';
+            const res  = await fetch(`api/select.php?query=${queryName}&id=${encodeURIComponent(id)}`);
+            const json = await res.json();
 
-            const jsonItems = await resItems.json();
-            const jsonPay   = await resPay.json();
+            if (json.error || !json.data || json.data.length === 0)
+            {
+                modalDetails.innerHTML = '<p style="color:#888;font-size:13px;">No item line breakdowns recorded.</p>';
+                return;
+            }
 
-            const itemsData   = jsonItems.data || [];
-            const paymentData = jsonPay.data || [];
-
-            renderRelatedScreen(itemsData, paymentData, id);
+            renderRelatedTable(json.data, id);
         }
         catch (err)
         {
-            modalDetails.innerHTML = `<p style="color:#c0392b;font-size:13px;padding:15px;">Fetch failed: ${escapeHtml(err.message)}</p>`;
+            modalDetails.innerHTML = `<p style="color:#c0392b;font-size:13px;">Fetch failed: ${escapeHtml(err.message)}</p>`;
         }
     }
 
-    // High-density screen renderer that evaluates math for payment states
-    function renderRelatedScreen(itemsData, paymentData, orderId)
-    {
-        let html = '';
-        
-        // 1. Compute Totals 
-        const totalOrderCost = itemsData.reduce((sum, item) => sum + parseFloat(item.Total_Price || 0), 0);
-        const totalPaid      = paymentData.reduce((sum, p) => sum + parseFloat(p.Pay_Amount || 0), 0);
-        const hasPayment     = paymentData.length > 0;
-
-        // 2. Determine Smart Financial Status Badge
-        let statusBadge = '';
-        if (totalPaid === 0) {
-            statusBadge = `<span style="background:#fee2e2; color:#b91c1c; padding:2px 8px; border-radius:12px; font-weight:600; font-size:11px;">Unpaid</span>`;
-        } else if (totalPaid < totalOrderCost) {
-            statusBadge = `<span style="background:#fef3c7; color:#d97706; padding:2px 8px; border-radius:12px; font-weight:600; font-size:11px;">Partially Paid</span>`;
-        } else {
-            statusBadge = `<span style="background:#dcfce7; color:#15803d; padding:2px 8px; border-radius:12px; font-weight:600; font-size:11px;">Fully Paid</span>`;
-        }
-
-        // --- SECTION A: COMPACT PAYMENT DASHBOARD ---
-        html += `
-        <div style="margin: 10px 0 15px 0; padding: 10px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 15px;">
-            <div style="display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin: 0;">
-                <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #1e293b; margin: 0;">
-                    <i class="fa-solid fa-credit-card" style="color:#64748b;"></i>
-                    <strong>Payment:</strong> ${statusBadge}
-                </div>`;
-
-        if (hasPayment) {
-            const pay = paymentData[0];
-            html += `
-                <span style="font-size:12.5px; color:#475569; margin: 0;"><strong>Ref:</strong> #${escapeHtml(String(pay.Pay_ID))}</span>
-                <span style="font-size:12.5px; color:#475569; margin: 0;"><strong>Method:</strong> ${escapeHtml(String(pay.Pay_Method))}</span>
-                <span style="font-size:12.5px; color:#475569; margin: 0;"><strong>Paid:</strong> <strong style="color:#1e293b;">₱${Number(totalPaid).toFixed(2)}</strong></span>`;
-        }
-
-        html += `
-            </div>
-            <div>
-                ${hasPayment 
-                    ? `<button id="btnEditPayment" style="height:26px; padding:0 10px; background:#fff; border:1px solid #cbd5e1; border-radius:6px; font-size:11.5px; color:#334155; font-weight:500; cursor:pointer; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-pen" style="font-size:10px;"></i> Edit</button>`
-                    : `<button id="btnAddPayment" style="height:26px; padding:0 10px; background:#16a34a; border:none; border-radius:6px; font-size:11.5px; color:#fff; font-weight:500; cursor:pointer; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-plus"></i> Record Payment</button>`
-                }
-            </div>
-        </div>`;
-
-        // --- SECTION B: ITEMS BREAKDOWN TABLE ---
-        html += `
-        <div style="display:flex; align-items:center; margin-bottom:6px; padding:0 2px;">
-            <h4 style="margin:0; font-size:13px; color:#334155; font-weight:600;"><i class="fa-solid fa-box" style="color:#64748b; margin-right:4px;"></i> Order Items Breakdown</h4>
-        </div>`;
-        
-        if (itemsData.length === 0) {
-            html += '<p style="color:#64748b; font-size:12.5px; padding:20px; text-align:center; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:6px;">No dynamic items attached to this order.</p>';
-        } else {
-            const cols = Object.keys(itemsData[0]);
-            html += '<div style="overflow-x:auto; border:1px solid #e2e8f0; border-radius:6px 6px 0 0; background:#fff;"><table style="width:100%; border-collapse:collapse; font-size:12px; text-align:left; min-width:600px;">';
-            html += '<thead><tr style="background:#f1f5f9; border-bottom:1px solid #e2e8f0;">';
-            cols.forEach(col => {
-                html += `<th style="padding:8px 12px; color:#475569; font-weight:600; text-transform:capitalize;">${escapeHtml(col.replace('_',' '))}</th>`;
-            });
-            html += '<th style="padding:8px 12px; color:#475569; font-weight:600; text-align:center;">Options</th>';
-            html += '</tr></thead><tbody>';
-
-            itemsData.forEach((detailRow, ri) => {
-                const borderStyle = ri === itemsData.length - 1 ? '' : 'border-bottom: 1px solid #f1f5f9;';
-                const rowDataB64 = btoa(unescape(encodeURIComponent(JSON.stringify(detailRow))));
-                html += `<tr>`;
-                cols.forEach(col => {
-                    let val = String(detailRow[col] ?? '');
-                    if(col.toLowerCase().includes('price') || col.toLowerCase().includes('total')) {
-                        val = '₱' + Number(val).toFixed(2);
-                    }
-                    html += `<td style="padding:8px 12px; color:#334155; ${borderStyle}">${escapeHtml(val)}</td>`;
-                });
-                html += `<td style="padding:8px 12px; text-align:center; ${borderStyle}">
-                    <button onclick="handleRelatedEdit('${rowDataB64}', ${orderId})" style="height:22px; padding:0 8px; background:#fff; border:1px solid #cbd5e1; border-radius:4px; font-size:11px; color:#475569; cursor:pointer;">Modify</button>
-                </td></tr>`;
-            });
-            html += '</tbody></table></div>';
-
-            // --- NEW FEATURE: TOTAL ORDER COST FOOTER DASHBAR ---
-            html += `
-            <div style="display:flex; justify-content:flex-end; padding:10px 16px; background:#f8fafc; border:1px solid #e2e8f0; border-top:none; border-radius:0 0 6px 6px; font-size:13px; margin-bottom:15px;">
-                <div style="text-align:right;">
-                    <span style="color:#64748b; font-weight:500; margin-right:8px;">Total Order Cost:</span>
-                    <strong style="font-size:15px; color:#0f172a; font-family:monospace;">₱${totalOrderCost.toFixed(2)}</strong>
-                </div>
-            </div>`;
-        }
-
-        modalDetails.innerHTML = html;
-
-        // Interactive bindings for payment adjustments
-        if (hasPayment) {
-            document.getElementById('btnEditPayment').onclick = function () {
-                showPaymentForm(paymentData[0], orderId, true);
-            };
-        } else {
-            document.getElementById('btnAddPayment').onclick = function () {
-                showPaymentForm({ Order_ID: orderId }, orderId, false);
-            };
-        }
-    }
-
-    // High density payment input form sub-state
-    function showPaymentForm(paymentRow, orderId, isEdit)
-    {
-        modalTitle.innerText = isEdit ? `Modify Payment (Order #${orderId})` : `Record Payment (Order #${orderId})`;
-
-        modalDetails.innerHTML = `
-            <div class="update-form" style="padding:5px 2px;">
-                <div class="form-field" style="margin-bottom:12px;">
-                    <label style="font-size:12px; font-weight:500; color:#475569; margin-bottom:4px; display:block;">Payment Method</label>
-                    <input id="pay-method" type="text" value="${escapeHtml(paymentRow.Pay_Method ?? '')}" placeholder="e.g., Cash, GCash, Bank Transfer" style="width:100%; height:32px; padding:0 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px;">
-                </div>
-                <div class="form-field" style="margin-bottom:5px;">
-                    <label style="font-size:12px; font-weight:500; color:#475569; margin-bottom:4px; display:block;">Amount Remitted (₱)</label>
-                    <input id="pay-amount" type="number" step="any" min="0" value="${escapeHtml(String(paymentRow.Pay_Amount ?? ''))}" placeholder="0.00" style="width:100%; height:32px; padding:0 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px;">
-                </div>
-            </div>`;
-
-        btnsModal.innerHTML = `
-            <button id="btnPayConfirm" class="modal-btn warning">Save Record</button>
-            <button id="btnPayCancel"  class="modal-btn cancel">Cancel</button>
-        `;
-
-        document.getElementById('btnPayCancel').onclick = function () {
-            showRelatedRecords('orders', orderId);
-        };
-
-        document.getElementById('btnPayConfirm').onclick = async function ()
-        {
-            const method = document.getElementById('pay-method').value.trim();
-            const amount = document.getElementById('pay-amount').value.trim();
-
-            if (!method || !amount) {
-                alert('Please complete all form entries.');
-                return;
-            }
-
-            let affected = 0;
-            if (isEdit) {
-                affected = await runUpdate('update_payment', [orderId, method, parseFloat(amount), paymentRow.Pay_ID]);
-            } else {
-                const result = await runInsert('insert_payment', [orderId, method, parseFloat(amount)]);
-                affected = result && result.affected_rows > 0 ? result.affected_rows : 0;
-            }
-
-            if (affected > 0) alert('Payment ledger successfully adjusted.');
-            showRelatedRecords('orders', orderId);
-            runSelect(getActiveQueryName(), 'result-container');
-        };
-    }
-    
-    // Handles writing the input form for payment additions/mutations
-    function showPaymentForm(paymentRow, orderId, isEdit)
-    {
-        modalTitle.innerText = isEdit ? `Modify Payment (Order ID: ${orderId})` : `Add Payment Row (Order ID: ${orderId})`;
-
-        modalDetails.innerHTML = `
-            <div class="update-form">
-                <div class="form-field">
-                    <label for="pay-method">Payment Method</label>
-                    <input id="pay-method" type="text" value="${escapeHtml(paymentRow.Pay_Method ?? '')}" placeholder="e.g., Cash, GCash, Bank Transfer">
-                </div>
-                <div class="form-field">
-                    <label for="pay-amount">Amount Handled</label>
-                    <input id="pay-amount" type="number" step="any" min="0" value="${escapeHtml(String(paymentRow.Pay_Amount ?? ''))}" placeholder="0.00">
-                </div>
-            </div>`;
-
-        btnsModal.innerHTML = `
-            <button id="btnPayConfirm" class="modal-btn warning">Confirm Details</button>
-            <button id="btnPayCancel"  class="modal-btn cancel">Cancel</button>
-        `;
-
-        document.getElementById('btnPayCancel').onclick = function () {
-            showRelatedRecords('orders', orderId);
-        };
-
-        document.getElementById('btnPayConfirm').onclick = async function ()
-        {
-            const method = document.getElementById('pay-method').value.trim();
-            const amount = document.getElementById('pay-amount').value.trim();
-
-            if (!method || !amount) {
-                alert('All payment inputs are required.');
-                return;
-            }
-
-            let affected = 0;
-            if (isEdit) {
-                // update_payment signature requirements: Order_ID, Pay_Method, Pay_Amount, WHERE Pay_ID
-                const params = [orderId, method, parseFloat(amount), paymentRow.Pay_ID];
-                affected = await runUpdate('update_payment', params);
-            } else {
-                // insert_payment signature requirements: Order_ID, Pay_Method, Pay_Amount
-                const params = [orderId, method, parseFloat(amount)];
-                const result = await runInsert('insert_payment', params);
-                affected = result && result.affected_rows > 0 ? result.affected_rows : 0;
-            }
-
-            if (affected > 0) {
-                alert(isEdit ? 'Payment values modified successfully.' : 'Payment row created successfully.');
-            } else {
-                alert('Save failed or no operational modifications were processed.');
-            }
-
-            // Sync and refresh everything
-            showRelatedRecords('orders', orderId);
-            runSelect(getActiveQueryName(), 'result-container');
-        };
-    }
-
-    // Builds the related records table with an Edit button on each row.
-    // Separated from showRelatedRecords() so it can be called again after a successful update.
     function renderRelatedTable(data, orderId)
     {
         const cols = Object.keys(data[0]);
-
         let tableHtml = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;">';
 
-        // Header — columns + an Options column for the Edit button
         tableHtml += '<thead><tr>';
-        cols.forEach(col =>
-        {
+        cols.forEach(col => {
             tableHtml += `<th style="padding:6px 10px;background:#38414e;color:#fff;text-align:left;">${escapeHtml(col)}</th>`;
         });
         tableHtml += '<th style="padding:6px 10px;background:#38414e;color:#fff;text-align:left;">Options</th>';
         tableHtml += '</tr></thead><tbody>';
 
-        // Body — one row per order detail, with an Edit button carrying the row data
         data.forEach((detailRow, ri) =>
         {
             const bg         = ri % 2 === 0 ? '#fff' : '#f8fafc';
             const rowDataB64 = btoa(unescape(encodeURIComponent(JSON.stringify(detailRow))));
 
             tableHtml += `<tr style="background:${bg}">`;
-            cols.forEach(col =>
-            {
+            cols.forEach(col => {
                 tableHtml += `<td style="padding:6px 10px;border-bottom:1px solid #f1f5f9;">${escapeHtml(String(detailRow[col] ?? ''))}</td>`;
             });
             tableHtml += `<td style="padding:6px 10px;border-bottom:1px solid #f1f5f9;">
@@ -514,15 +528,12 @@ function ViewOptions(rowDataB64)
         modalDetails.innerHTML = tableHtml;
     }
 
-    // ---- RELATED RECORDS EDIT MODE ----
-    // Called by the Edit button on a related record row.
-    // detailRowB64 carries the full row data; orderId is used to refresh the list on save.
     function showRelatedEditMode(detailRow, orderId)
     {
         const detailCols  = Object.keys(detailRow);
-        const detailPK    = detailRow[detailCols[0]]; // OrDet_ID — first column from list_by_order
+        const detailPK    = detailRow[detailCols[0]];
 
-        modalTitle.innerText = `Edit Order Detail (ID: ${detailPK})`;
+        modalTitle.innerText = `Edit Breakdown Record Line (ID: ${detailPK})`;
 
         let formHtml = '<div class="update-form">';
         detailCols.forEach((col, i) =>
@@ -559,23 +570,23 @@ function ViewOptions(rowDataB64)
             const params = [];
             detailCols.forEach((col, i) =>
             {
-                if (i === 0) return;                          
-                if (RELATED_READONLY_COLS.includes(col)) return; 
+                if (i === 0) return;
+                if (RELATED_READONLY_COLS.includes(col)) return;
                 params.push(document.getElementById(`rel-field-${i}`).value);
             });
-            params.push(detailPK); 
+            params.push(detailPK);
 
-            const affected = await runUpdate('update_orderdetail', params);
+            const childUpdateKey = currentTable === 'orders' ? 'update_orderdetail' : 'update_purchasedetail';
+            const affected = await runUpdate(childUpdateKey, params);
 
-            if (affected > 0) alert('Order detail updated successfully.');
-            
-            // Clean routing directly back to our layout engine
-            showRelatedRecords('orders', orderId);
+            if (affected > 0) alert('Breakdown line item updated successfully.');
+            else alert('Update failed or no values were changed.');
+
+            showRelatedRecords(currentTable, orderId);
         };
 
-        document.getElementById('btnRelCancel').onclick = function ()
-        {
-            showRelatedRecords('orders', orderId);
+        document.getElementById('btnRelCancel').onclick = function () {
+            showRelatedRecords(currentTable, orderId);
         };
 
         document.getElementById('btnClose').onclick = function ()
@@ -585,8 +596,6 @@ function ViewOptions(rowDataB64)
         };
     }
 
-    // Exposed as a global so the inline onclick on the Edit button can reach it.
-    // Decodes the row data and delegates to showRelatedEditMode().
     window.handleRelatedEdit = function (rowDataB64, orderId)
     {
         const detailRow = JSON.parse(decodeURIComponent(escape(atob(rowDataB64))));
@@ -597,10 +606,6 @@ function ViewOptions(rowDataB64)
 
 // ==== ADD / INSERT MODAL ================================
 
-/**
- * Opens the shared viewModal in ADD mode with a blank form
- * for the currently active table.
- */
 function showAddModal()
 {
     const activeBtn    = document.querySelector('.tab-btn.active');
@@ -616,9 +621,17 @@ function showAddModal()
     const modal        = document.getElementById('viewModal');
     const modalTitle   = document.getElementById('modalTitle');
     const modalDetails = document.getElementById('modalDetails');
+    const subActions   = document.getElementById('modalSubActions');
     const btnsModal    = document.querySelector('.modal-buttons');
 
+    const isTransactionTable = (currentTable === 'orders' || currentTable === 'purchase');
+
     modalTitle.innerText = `Add New ${currentTable.toUpperCase()} Record`;
+
+    if (subActions) {
+        subActions.innerHTML = '';
+        subActions.style.display = 'none';
+    }
 
     let formHtml = '<div class="update-form">';
     fields.forEach((field, i) =>
@@ -636,22 +649,81 @@ function showAddModal()
     });
     formHtml += '</div>';
 
+    if (isTransactionTable)
+    {
+        const modalContent = document.querySelector('#viewModal .modal-content');
+        modalContent.style.maxWidth = '700px';
+        modalContent.style.width    = '95%';
+
+        formHtml += `
+            <div style="margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 15px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                    <h4 style="margin: 0; font-size: 13px; color: #334155; font-weight: 600;">
+                        <i class="fa-solid fa-list-ol" style="margin-right: 4px; color: #64748b;"></i> Item Lines Breakdown
+                    </h4>
+                    <button type="button" id="btnAddItemLine" style="height: 26px; padding: 0 10px; background: #2563eb; border: none; border-radius: 6px; font-size: 11.5px; color: #fff; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                        <i class="fa-solid fa-plus"></i> Add Item Row
+                    </button>
+                </div>
+                <div id="itemLinesContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto; padding-right: 2px;"></div>
+            </div>`;
+    }
+
     modalDetails.style.display = 'block';
     modalDetails.innerHTML     = formHtml;
 
-    // Redraw buttons for add mode — consistent with the same pattern used in ViewOptions.
     btnsModal.innerHTML = `
-        <button id="btnUpdate" class="modal-btn confirm-add">Confirm Add</button>
-        <button id="btnDelete" class="modal-btn cancel">Cancel</button>
-        <button id="btnClose"  class="modal-btn cancel">Close</button>
+        <button id="btnConfirmAdd" class="modal-btn confirm-add">Confirm Add</button>
+        <button id="btnCancelAdd"  class="modal-btn cancel">Cancel</button>
     `;
 
     modal.style.display = 'flex';
 
-    document.getElementById('btnUpdate').onclick = async function ()
+    function generateLineRow()
     {
-        const params = fields.map((field, i) =>
-        {
+        const container = document.getElementById('itemLinesContainer');
+        const rowId = 'row_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+        const targetIdLabel = currentTable === 'orders' ? 'DStock ID' : 'Product ID';
+
+        const rowDiv = document.createElement('div');
+        rowDiv.id = rowId;
+        rowDiv.className = 'receipt-item-row';
+        rowDiv.style = "display: flex; gap: 8px; align-items: center; background: #f8fafc; padding: 6px; border: 1px solid #e2e8f0; border-radius: 6px;";
+        
+        rowDiv.innerHTML = `
+            <div style="flex: 2;">
+                <input type="number" class="line-target-id" placeholder="${targetIdLabel}" style="width:100%; height:30px; padding:0 8px; border:1px solid #cbd5e1; border-radius:4px; font-size:12px;" required>
+            </div>
+            <div style="flex: 1.5;">
+                <input type="number" class="line-qty" placeholder="Qty" min="1" style="width:100%; height:30px; padding:0 8px; border:1px solid #cbd5e1; border-radius:4px; font-size:12px;" required>
+            </div>
+            <div style="flex: 2;">
+                <input type="number" class="line-price" placeholder="Unit Price (₱)" step="0.01" min="0" style="width:100%; height:30px; padding:0 8px; border:1px solid #cbd5e1; border-radius:4px; font-size:12px;" required>
+            </div>
+            <button type="button" class="btn-remove-line" style="height:30px; width:32px; background:#fee2e2; border:1px solid #fca5a5; border-radius:4px; color:#b91c1c; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+                <i class="fa-solid fa-trash-can" style="font-size:11px;"></i>
+            </button>
+        `;
+
+        rowDiv.querySelector('.btn-remove-line').onclick = function() { rowDiv.remove(); };
+        container.appendChild(rowDiv);
+    }
+
+    if (isTransactionTable)
+    {
+        generateLineRow();
+        document.getElementById('btnAddItemLine').onclick = generateLineRow;
+    }
+
+    function closeModalAndReset()
+    {
+        document.querySelector('#viewModal .modal-content').style.maxWidth = '450px';
+        modal.style.display = 'none';
+    }
+
+    document.getElementById('btnConfirmAdd').onclick = async function ()
+    {
+        const params = fields.map((field, i) => {
             const input = document.getElementById(`add-field-${i}`);
             return input ? input.value.trim() : '';
         });
@@ -663,20 +735,55 @@ function showAddModal()
             return;
         }
 
+        let linesData = [];
+        if (isTransactionTable)
+        {
+            const rowElements = document.querySelectorAll('.receipt-item-row');
+            if (rowElements.length === 0)
+            {
+                alert('Transaction aborted: You must include at least 1 item breakdown line.');
+                return;
+            }
+
+            let validationPassed = true;
+            rowElements.forEach(row => {
+                const targetId = row.querySelector('.line-target-id').value.trim();
+                const qty      = row.querySelector('.line-qty').value.trim();
+                const price    = row.querySelector('.line-price').value.trim();
+
+                if (!targetId || !qty || !price) validationPassed = false;
+                linesData.push({ targetId, qty, price });
+            });
+
+            if (!validationPassed) {
+                alert('Please fill out all missing fields inside your item lines.');
+                return;
+            }
+        }
+
         const result = await runInsert(`insert_${currentTable}`, params);
 
         if (result && result.affected_rows > 0)
         {
-            alert(`Record added successfully (ID: ${result.insert_id}).`);
-            modal.style.display = 'none';
+            const generatedParentId = result.insert_id;
+
+            if (isTransactionTable)
+            {
+                const childQueryKey = currentTable === 'orders' ? 'insert_orderdetail' : 'insert_purchasedetail';
+                for (const line of linesData) {
+                    await runInsert(childQueryKey, [generatedParentId, line.targetId, line.qty, line.price]);
+                }
+            }
+
+            alert(`Record and all item lines posted successfully! (Generated ID: ${generatedParentId}).`);
+            closeModalAndReset();
             runSelect(getActiveQueryName(), 'result-container');
         }
         else
         {
-            alert('Insert failed. Please check your values and try again.');
+            alert('Insert transaction failed. Please check backend compatibility validations.');
         }
     };
 
-    document.getElementById('btnDelete').onclick = function () { modal.style.display = 'none'; };
-    document.getElementById('btnClose').onclick  = function () { modal.style.display = 'none'; };
+    document.getElementById('btnCancelAdd').onclick = closeModalAndReset;
 }

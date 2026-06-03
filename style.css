@@ -115,21 +115,6 @@ td button:hover
 .is-hidden {
     display: none !important;
 }
-
-.search-row
-{
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 20px;
-}
- 
-.search-row #search-bar
-{
-    margin-bottom: 0;   /* remove the old standalone margin */
-    flex: 1;
-    max-width: 400px;
-}
  
 #btn-add
 {
@@ -298,21 +283,6 @@ tbody tr:hover
     background: #f8fafc;
 }
 
-/* ==== TABLE SCROLLER ======================================== */
-
-.table-scroll
-{
-    max-height: 480px;
-    overflow-y: auto;
-}
-
-.table-scroll th
-{
-    position: sticky;
-    top: 0;
-    z-index: 1;
-}
-
 /* ==== LOADING & ERROR STATES ========================= */
 
 .loading-text
@@ -345,16 +315,18 @@ tbody tr:hover
     z-index: 9999;
 }
 
-.modal-content
-{
+.modal-content {
     background: #fff;
-    padding: 24px;
-    border-radius: 12px;
-    width: 90%;
-    max-width: 450px;
-    text-align: center;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    animation: fadeIn 0.15s ease-out;
+    border-radius: 8px;
+    padding: 20px;
+    width: 100%;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    box-sizing: border-box;
+
+    /* CRITICAL: Limit height to 85% of screen height and change to column layout */
+    max-height: 85vh; 
+    display: flex;
+    flex-direction: column;
 }
 
 @keyframes fadeIn
@@ -379,26 +351,21 @@ tbody tr:hover
     margin-bottom: 16px;
 }
 
-#modalDetails
-{
-    text-align: left;
-    margin: 0 0 16px;
-    font-family: "Roboto Mono", monospace;
-    font-size: 12.5px;
-    white-space: pre-wrap;
-    color: #334155;
-    line-height: 1.8;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    padding: 10px 12px;
-}
+#modalDetails {
+    margin-bottom: 15px;
+    padding-right: 6px; /* Padding offset so scroll track doesn't overlap fields */
 
-.modal-buttons
-{
+    /* CRITICAL: Eat up remaining vertical space and spawn scroll wheel when needed */
+    flex: 1;
+    overflow-y: auto; 
+}
+.modal-buttons {
     display: flex;
-    flex-direction: column;
-    gap: 8px;
+    justify-content: flex-end;
+    gap: 10px;
+    
+    /* CRITICAL: Prevents buttons from squishing or shrinking when scrolling is active */
+    flex-shrink: 0; 
 }
 
 
@@ -518,7 +485,7 @@ tbody tr:hover
     align-items: center;
     justify-content: space-between;
     padding: 0 1.5rem;
-    height: 100%;
+    height: 80px;
     background: #1e293b;
     border-bottom: 1px solid #2d3f55;
     position: sticky;
@@ -695,20 +662,6 @@ tbody tr:hover
     border-bottom: none;
 }
 
-/* ==== REPORTS SCROLLER======================================== */
-
-.report-scroll
-{
-    max-height: 480px;
-    overflow-y: auto;
-}
-
-.report-scroll th
-{
-    position: sticky;
-    top: 0;
-    z-index: 1;
-}
 
 /* ==== RESPONSIVE ===================================== */
 
