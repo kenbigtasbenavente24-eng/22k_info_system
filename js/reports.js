@@ -67,9 +67,7 @@ function renderReportTable(rows)
 }
 
 // Builds the full table HTML string, including status badges and a record count footer.
-function buildTableHTML(rows, columns)
-{
-    const isStatusColumn = col => col.toLowerCase().includes('status');
+function buildTableHTML(rows, columns){
 
     const headerCells = columns
         .map(col => `<th>${escapeHtml(col)}</th>`)
@@ -80,8 +78,7 @@ function buildTableHTML(rows, columns)
         const cells = columns.map(col =>
         {
             const value = String(row[col] ?? '');
-            const cell  = isStatusColumn(col) ? statusBadge(value) : escapeHtml(value);
-            return `<td>${cell}</td>`;
+            return `<td>${escapeHtml(value)}</td>`;
         }).join('');
         return `<tr>${cells}</tr>`;
     }).join('');
@@ -90,7 +87,7 @@ function buildTableHTML(rows, columns)
     const recordLabel = `${recordCount} record${recordCount !== 1 ? 's' : ''}`;
 
     return `
-        <div class="table-scroll">
+        <div class="report-scroll">
             <table>
                 <thead><tr>${headerCells}</tr></thead>
                 <tbody>${bodyRows}</tbody>

@@ -298,6 +298,21 @@ tbody tr:hover
     background: #f8fafc;
 }
 
+/* ==== TABLE SCROLLER ======================================== */
+
+.table-scroll
+{
+    max-height: 480px;
+    overflow-y: auto;
+}
+
+.table-scroll th
+{
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
 /* ==== LOADING & ERROR STATES ========================= */
 
 .loading-text
@@ -503,7 +518,7 @@ tbody tr:hover
     align-items: center;
     justify-content: space-between;
     padding: 0 1.5rem;
-    height: 80px;
+    height: 100%;
     background: #1e293b;
     border-bottom: 1px solid #2d3f55;
     position: sticky;
@@ -680,6 +695,20 @@ tbody tr:hover
     border-bottom: none;
 }
 
+/* ==== REPORTS SCROLLER======================================== */
+
+.report-scroll
+{
+    max-height: 480px;
+    overflow-y: auto;
+}
+
+.report-scroll th
+{
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
 
 /* ==== RESPONSIVE ===================================== */
 
