@@ -1039,13 +1039,14 @@ function showAddModal()
 
             if (!valid) { alert('Please fill out all fields in your item lines.'); return; }
         }
-
+        
         const result = await runInsert(`insert_${currentTable}`, params);
 
         if (result && result.affected_rows > 0)
         {
-            writeLog(currentTable, generatedParentId, `New ${currentTable} record added`); // writes to log with the generated ID from the insert
-            const generatedParentId = result.insert_id;
+            const generatedParentId = result.insert_id; // declare FIRST
+
+            await writeLog(currentTable, generatedParentId, `New ${currentTable} record added`); // THEN use it
 
             if (isTransactionTable)
             {
@@ -1055,13 +1056,15 @@ function showAddModal()
             }
 
             alert(`Record posted successfully! (Generated ID: ${generatedParentId}).`);
-            closeModalAndReset();
-            runSelect(getActiveQueryName(), 'result-container');
         }
         else
         {
             alert('Insert failed. Please check your inputs.');
         }
+
+        // Always close and refresh regardless of outcome
+        closeModalAndReset();
+        runSelect(getActiveQueryName(), 'result-container');
     };
 
     document.getElementById('btnCancelAdd').onclick = closeModalAndReset;

@@ -141,6 +141,10 @@ $DELETE_QUERIES = [
         'sql'   => "DELETE FROM deliverystock WHERE DStock_ID = ?",
         'types' => 'i',
     ],
+    'delete_purchase' => [
+        'sql'   => "DELETE FROM purchase WHERE Pur_ID = ?",
+        'types' => 'i',
+    ],
 ];
 
 $UPDATE_QUERIES = [

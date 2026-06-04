@@ -33,13 +33,15 @@ async function handleDelete(tableName, primaryId)
     const queryName = `delete_${tableName}`;
     const affected  = await runDelete(queryName, [primaryId]);
 
-    if (affected >= 0) {
+    if (affected >= 0)
+    {
+        await writeLog(tableName, primaryId, `Record deleted from ${tableName}`);
         alert(`Deleted ${affected} row(s).`);
-        // After confirmed delete:
-        writeLog(currentTable, primaryId, `Record deleted from ${currentTable}`);
     }
     else
+    {
         alert('Delete failed. Check the console for details.');
+    }
 
     runSelect(getActiveQueryName(), 'result-container');
 }
