@@ -1,11 +1,10 @@
 // js/modal.js
-// All modal behaviour: view, edit, and add (insert) modes.
-// Depends on: utils.js, api.js
+// All modal behaviour: view, edit, add (insert), related records, and live-search.
+// Depends on: utils.js, api.js, changelog.js
 
 // -------------------------------------------------------
-// Columns that come from JOINs — shown in the edit form
-// but excluded from UPDATE params since they're not real
-// columns on the base table.
+// JOIN columns shown in forms but excluded from UPDATE
+// params — they are not real columns on the base table.
 // -------------------------------------------------------
 const TABLE_READONLY_COLS = {
     product:       ['Supplier_Name'],
@@ -13,7 +12,6 @@ const TABLE_READONLY_COLS = {
     deliverystock: ['Prod_Name', 'Prod_Price'],
 };
 
-// Readonly columns for the related records (orderdetails) edit form.
 const RELATED_READONLY_COLS = ['Prod_Name', 'Total_Price'];
 
 // -------------------------------------------------------
@@ -58,11 +56,60 @@ const TABLE_INSERT_FIELDS = {
     ],
 };
 
-// Tables that get the "View Related Records" button in view mode.
 const TABLES_WITH_RELATED = ['orders', 'purchase'];
 
 
-// ==== VIEW / EDIT MODAL =================================
+// ================================================================
+// SHARED MODAL HELPERS
+// ================================================================
+
+// Grabs all the shared modal DOM references in one call.
+function getModalRefs()
+{
+    return {
+        modal:        document.getElementById('viewModal'),
+        modalTitle:   document.getElementById('modalTitle'),
+        modalDetails: document.getElementById('modalDetails'),
+        subActions:   document.getElementById('modalSubActions'),
+        btnsModal:    document.querySelector('.modal-buttons'),
+        modalContent: document.querySelector('#viewModal .modal-content'),
+    };
+}
+
+// Resets modal to its default narrow width and hides it.
+function closeModal()
+{
+    const { modal, modalContent, subActions } = getModalRefs();
+    modalContent.style.maxWidth = '450px';
+    modalContent.style.width    = '';
+    modal.style.display         = 'none';
+    if (subActions) { subActions.innerHTML = ''; subActions.style.display = 'none'; }
+}
+
+// Builds a read-only key/value field row for the view mode.
+function buildViewField(label, value)
+{
+    return `
+        <div style="line-height:1.5; border-bottom:1px solid #f1f5f9; padding-bottom:6px;">
+            <strong style="color:#475569;">${escapeHtml(label)}:</strong>
+            <span style="color:#0f172a; margin-left:4px;">${escapeHtml(String(value ?? ''))}</span>
+        </div>`;
+}
+
+// Builds a labelled input row for edit/add forms.
+function buildFormField(id, label, value, readonly = false, extraNote = '')
+{
+    return `
+        <div class="form-field">
+            <label for="${id}">${escapeHtml(label)}${extraNote}</label>
+            <input id="${id}" type="text" value="${escapeHtml(String(value ?? ''))}"${readonly ? ' readonly' : ''}>
+        </div>`;
+}
+
+
+// ================================================================
+// VIEW / EDIT MODAL
+// ================================================================
 
 function ViewOptions(rowDataB64)
 {
@@ -72,57 +119,41 @@ function ViewOptions(rowDataB64)
 
     const activeBtn    = document.querySelector('.tab-btn.active');
     const currentTable = activeBtn ? activeBtn.dataset.query : 'record';
+    const hasRelated   = TABLES_WITH_RELATED.includes(currentTable);
 
-    const modal        = document.getElementById('viewModal');
-    const modalTitle   = document.getElementById('modalTitle');
-    const modalDetails = document.getElementById('modalDetails');
-    const subActions   = document.getElementById('modalSubActions');
-    const btnsModal    = document.querySelector('.modal-buttons');
-
-    const hasRelated = TABLES_WITH_RELATED.includes(currentTable);
+    const { modal, modalTitle, modalDetails, subActions, btnsModal, modalContent } = getModalRefs();
 
     showViewMode();
 
     // ---- VIEW MODE ----
     async function showViewMode()
     {
-        modalTitle.innerText = `Manage ${currentTable.toUpperCase()} (ID: ${primaryId})`;
+        modalTitle.innerText    = `Manage ${currentTable.toUpperCase()} (ID: ${primaryId})`;
+        modalContent.style.maxWidth = '450px';
 
-        let formHtml = '<div style="display: flex; flex-direction: column; gap: 10px; padding: 6px 0; font-size: 14.5px; color: #1e293b; font-family: system-ui, sans-serif;">';
-        columns.forEach(col =>
-        {
-            formHtml += `
-                <div style="line-height: 1.5; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px;">
-                    <strong style="color: #475569;">${escapeHtml(col)}:</strong> 
-                    <span style="color: #0f172a; margin-left: 4px;">${escapeHtml(String(row[col] ?? ''))}</span>
-                </div>`;
-        });
-        
-        // Placeholder container for asynchronous totals and payment extensions
-        formHtml += `<div id="dynamicModalExtensions"></div>`;
-        formHtml += '</div>';
+        let formHtml = '<div style="display:flex; flex-direction:column; gap:10px; padding:6px 0; font-size:14.5px; color:#1e293b; font-family:system-ui,sans-serif;">';
+        columns.forEach(col => { formHtml += buildViewField(col, row[col]); });
+        formHtml += '<div id="dynamicModalExtensions"></div></div>';
 
         modalDetails.style.display = 'block';
         modalDetails.innerHTML     = formHtml;
         modal.style.display        = 'flex';
 
-        document.querySelector('#viewModal .modal-content').style.maxWidth = '450px';
-
+        // Related records button
         if (hasRelated)
         {
             subActions.innerHTML = `
-                <button id="btnViewRelated" class="modal-btn info" style="width: 100%; margin: 0; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 6px; height: 38px; font-weight: 600;">
+                <button id="btnViewRelated" class="modal-btn info"
+                    style="width:100%; margin:0; box-sizing:border-box; display:flex;
+                           align-items:center; justify-content:center; gap:6px; height:38px; font-weight:600;">
                     <i class="fa-solid fa-list-ol"></i> View Related Records
-                </button>
-            `;
+                </button>`;
             subActions.style.display = 'block';
-            document.getElementById('btnViewRelated').onclick = function () {
-                showRelatedRecords(currentTable, primaryId);
-            };
+            document.getElementById('btnViewRelated').onclick = () => showRelatedRecords(currentTable, primaryId);
         }
         else
         {
-            subActions.innerHTML = '';
+            subActions.innerHTML     = '';
             subActions.style.display = 'none';
         }
 
@@ -131,479 +162,393 @@ function ViewOptions(rowDataB64)
             <button id="btnDelete" class="modal-btn danger">Delete Record</button>
             <button id="btnClose"  class="modal-btn cancel">Close</button>
         `;
+        document.getElementById('btnUpdate').onclick = () => showEditMode();
+        document.getElementById('btnDelete').onclick = () => { closeModal(); handleDelete(currentTable, primaryId); };
+        document.getElementById('btnClose').onclick  = () => closeModal();
 
-        document.getElementById('btnUpdate').onclick = function () { showEditMode(); };
-        document.getElementById('btnDelete').onclick = function ()
-        {
-            modal.style.display = 'none';
-            subActions.style.display = 'none';
-            handleDelete(currentTable, primaryId);
-        };
-        document.getElementById('btnClose').onclick = function () { 
-            modal.style.display = 'none'; 
-            subActions.style.display = 'none';
-        };
-
-        // Asynchronously compile totals and lookup active payment information
         await loadModalExtensions();
     }
 
-    // ---- EXTENSION MANAGER: TOTAL AMOUNT & PAYMENTS ----
+
+    // ---- PAYMENT / TOTAL EXTENSIONS ----
     async function loadModalExtensions()
     {
         const extContainer = document.getElementById('dynamicModalExtensions');
         if (!extContainer) return;
 
-        let extensionsHtml = '';
+        let html = '';
 
-        // 1. Calculate & Append Total Breakdown Amounts
+        // 1. Total amount row (orders + purchases)
         if (currentTable === 'orders' || currentTable === 'purchase')
         {
             const queryName = currentTable === 'orders' ? 'list_by_order' : 'list_by_purchase';
             try
             {
-                const res = await fetch(`api/select.php?query=${queryName}&id=${encodeURIComponent(primaryId)}`);
-                const json = await res.json();
-                
-                let totalAmount = 0;
-                if (json.data && json.data.length > 0)
-                {
-                    json.data.forEach(item => {
-                        const qty = parseFloat(item.OrDet_Quantity || item.PurDet_Quantity || item.Quantity || 0);
-                        const price = parseFloat(item.OrDet_UnitPrice || item.PurDet_UnitPrice || item.UnitPrice || item.Prod_Price || 0);
-                        const lineTotal = item.Total_Price ? parseFloat(item.Total_Price) : (qty * price);
-                        totalAmount += lineTotal;
-                    });
-                }
-                
-                extensionsHtml += `
-                    <div style="line-height: 1.5; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; margin-top: 4px; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
-                        <strong style="color: #1e3a8a;"><i class="fa-solid fa-calculator" style="margin-right:4px;"></i> Total Amount:</strong> 
-                        <span style="color: #1e3a8a; font-weight: 700; font-size: 15px;">₱${totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                    </div>
-                `;
+                const json = await fetch(`api/select.php?query=${queryName}&id=${encodeURIComponent(primaryId)}`).then(r => r.json());
+                let total  = 0;
+                (json.data || []).forEach(item => {
+                    total += item.Total_Price
+                        ? parseFloat(item.Total_Price)
+                        : parseFloat(item.OrDet_Quantity || item.PurDet_Quantity || 0)
+                          * parseFloat(item.OrDet_UnitPrice || item.PurDet_UnitPrice || item.Prod_Price || 0);
+                });
+                html += buildTotalRow(total);
             }
-            catch (e) { console.error("Error calculating total amount:", e); }
+            catch (e) { console.error('Error calculating total:', e); }
         }
 
-        // 2. Fetch, Bind, and Handle Payment Sub-forms
+        // 2. Payment info (orders only)
         if (currentTable === 'orders')
         {
             try
             {
-                const res = await fetch(`api/select.php?query=payment_by_order&id=${encodeURIComponent(primaryId)}`);
-                const json = await res.json();
+                const [payJson, itemJson] = await Promise.all([
+                    fetch(`api/select.php?query=payment_by_order&id=${encodeURIComponent(primaryId)}`).then(r => r.json()),
+                    fetch(`api/select.php?query=list_by_order&id=${encodeURIComponent(primaryId)}`).then(r => r.json()),
+                ]);
 
-                const payment = (json.data && json.data.length > 0) ? json.data[0] : null;
+                const payment = payJson.data?.[0] ?? null;
+                let total     = 0;
+                (itemJson.data || []).forEach(item => { total += item.Total_Price ? parseFloat(item.Total_Price) : 0; });
 
-                // Grab the total amount already computed above so we can compare
-                // Parse it back from the rendered HTML, or re-derive from the items fetch
-                let totalAmount = 0;
-                const totalAmountRes  = await fetch(`api/select.php?query=list_by_order&id=${encodeURIComponent(primaryId)}`);
-                const totalAmountJson = await totalAmountRes.json();
-                if (totalAmountJson.data && totalAmountJson.data.length > 0)
-                {
-                    totalAmountJson.data.forEach(item => {
-                    const lineTotal = item.Total_Price ? parseFloat(item.Total_Price) : 0;
-                    totalAmount += lineTotal;
-                    });
-                }
+                html += buildPaymentBlock(payment, total);
+                extContainer.innerHTML = html;
 
-                extensionsHtml += `
-                    <div style="margin-top: 12px; padding: 10px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; font-family: system-ui, sans-serif;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <strong style="color: #166534; font-size: 13.5px;">
-                                <i class="fa-solid fa-credit-card"></i> Payment Information
-                            </strong>
-                    `;
-
-                if (payment)
-                {
-                    const amountPaid   = parseFloat(payment.Pay_Amount);
-                    const isFullyPaid  = amountPaid >= totalAmount && totalAmount > 0;
-                    const balance      = totalAmount - amountPaid;
-
-                    const statusColor  = isFullyPaid ? '#166534' : '#92400e';
-                    const statusBg     = isFullyPaid ? '#dcfce7' : '#fef3c7';
-                    const statusBorder = isFullyPaid ? '#86efac' : '#fcd34d';
-                    const statusIcon   = isFullyPaid ? 'fa-circle-check' : 'fa-clock';
-                    const statusLabel  = isFullyPaid ? 'Fully Paid' : 'Partially Paid / Pending';
-
-                    extensionsHtml += `
-                        <button id="btnTriggerPaymentEdit"
-                            style="height:24px; padding:0 10px; background:#e2e8f0; border:1px solid #cbd5e1;
-                                border-radius:4px; font-size:11.5px; color:#475569; cursor:pointer; font-weight:500;">
-                            <i class="fa-solid fa-pen-to-square"></i> Update
-                        </button>
-                        </div>
-
-                        <!-- Status Badge -->
-                        <div style="display:inline-flex; align-items:center; gap:5px; padding:3px 10px;
-                                background:${statusBg}; border:1px solid ${statusBorder};
-                                border-radius:999px; font-size:11.5px; font-weight:600;
-                                color:${statusColor}; margin-bottom:8px;">
-                            <i class="fa-solid ${statusIcon}"></i> ${statusLabel}
-                        </div>
-
-                        <!-- Payment Details -->
-                        <div style="font-size:13px; color:#14532d; line-height:1.8;">
-                        <div style="display:flex; justify-content:space-between;">
-                                <span><strong>Payment ID:</strong></span>
-                            <span>${escapeHtml(String(payment.Pay_ID))}</span>
-                        </div>
-                        <div style="display:flex; justify-content:space-between;">
-                            <span><strong>Method:</strong></span>
-                            <span>${escapeHtml(payment.Pay_Method)}</span>
-                        </div>
-                        <div style="display:flex; justify-content:space-between;">
-                            <span><strong>Amount Paid:</strong></span>
-                            <span style="font-weight:700;">
-                                ₱${amountPaid.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </span>
-                        </div>
-                        <div style="display:flex; justify-content:space-between;">
-                            <span><strong>Order Total:</strong></span>
-                            <span>₱${totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                        </div>
-                        </div>
-                        `;
-
-                    if (!isFullyPaid)
-                    {
-                        extensionsHtml += `
-                            <div style="display:flex; justify-content:space-between; color:#b45309; margin-top:2px;
-                                border-top:1px dashed #fcd34d; padding-top:4px;">
-                                <span><strong>Remaining Balance:</strong></span>
-                                <span style="font-weight:700;">
-                                    ₱${balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </span>
-                            </div>
-                        `;
-                    }
-
-                        extensionsHtml += `</div>`;
-                    }
-                    else
-                    {
-                        extensionsHtml += `
-                            <button id="btnTriggerPaymentAdd"
-                                style="height:24px; padding:0 10px; background:#16a34a; border:none;
-                                    border-radius:4px; font-size:11.5px; color:#fff; cursor:pointer; font-weight:500;">
-                                <i class="fa-solid fa-plus"></i> Add Payment
-                            </button>
-                        </div>
-                        <div style="font-size:13px; color:#166534; font-style:italic;">
-                            No payment recorded for this order yet.
-                        </div>
-                        `;
-                    }
-
-                extensionsHtml += `
-                    <div id="inlinePaymentForm" style="display:none; margin-top:10px;
-                        padding-top:10px; border-top:1px dashed #bbf7d0;"></div>
-                     </div>
-                    `;
-
-                extContainer.innerHTML = extensionsHtml;
-
-                if (payment) {
-                    document.getElementById('btnTriggerPaymentEdit').onclick = function () {
-                        openInlinePaymentForm(true, payment);
-                };
-                } else {
-                    document.getElementById('btnTriggerPaymentAdd').onclick = function () {
-                        openInlinePaymentForm(false, null);
-                        };
-                    }
-                }
-                catch (e)
-                {
-                    console.error("Error fetching payment details:", e);
-                    extContainer.innerHTML = extensionsHtml;
-                }
+                const editBtn = document.getElementById('btnTriggerPaymentEdit');
+                const addBtn  = document.getElementById('btnTriggerPaymentAdd');
+                if (editBtn) editBtn.onclick = () => openInlinePaymentForm(true,  payment);
+                if (addBtn)  addBtn.onclick  = () => openInlinePaymentForm(false, null);
             }
+            catch (e) { console.error('Error fetching payment:', e); extContainer.innerHTML = html; }
+        }
         else
         {
-            extContainer.innerHTML = extensionsHtml;
+            extContainer.innerHTML = html;
         }
     }
 
-    // ---- INLINE PAYMENT HANDLER ACTION FORM ----
+    // Builds the blue "Total Amount" summary row.
+    function buildTotalRow(total)
+    {
+        const formatted = total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return `
+            <div style="display:flex; justify-content:space-between; align-items:center;
+                        background:#f8fafc; padding:8px; border-radius:6px;
+                        border:1px solid #e2e8f0; margin-top:4px;">
+                <strong style="color:#1e3a8a;"><i class="fa-solid fa-calculator" style="margin-right:4px;"></i> Total Amount:</strong>
+                <span style="color:#1e3a8a; font-weight:700; font-size:15px;">₱${formatted}</span>
+            </div>`;
+    }
+
+    // Builds the green payment information card.
+    function buildPaymentBlock(payment, total)
+    {
+        let inner = '';
+
+        if (payment)
+        {
+            const paid        = parseFloat(payment.Pay_Amount);
+            const fullyPaid   = paid >= total && total > 0;
+            const balance     = total - paid;
+            const badge       = fullyPaid
+                ? { bg: '#dcfce7', border: '#86efac', color: '#166534', icon: 'fa-circle-check', label: 'Fully Paid' }
+                : { bg: '#fef3c7', border: '#fcd34d', color: '#92400e', icon: 'fa-clock',        label: 'Partially Paid / Pending' };
+            const fmt = n => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            inner = `
+                <button id="btnTriggerPaymentEdit"
+                    style="height:24px; padding:0 10px; background:#e2e8f0; border:1px solid #cbd5e1;
+                           border-radius:4px; font-size:11.5px; color:#475569; cursor:pointer; font-weight:500;">
+                    <i class="fa-solid fa-pen-to-square"></i> Update
+                </button>
+                </div>
+                <div style="display:inline-flex; align-items:center; gap:5px; padding:3px 10px;
+                            background:${badge.bg}; border:1px solid ${badge.border}; border-radius:999px;
+                            font-size:11.5px; font-weight:600; color:${badge.color}; margin-bottom:8px;">
+                    <i class="fa-solid ${badge.icon}"></i> ${badge.label}
+                </div>
+                <div style="font-size:13px; color:#14532d; line-height:1.8;">
+                    ${payRow('Payment ID', escapeHtml(String(payment.Pay_ID)))}
+                    ${payRow('Method',     escapeHtml(payment.Pay_Method))}
+                    ${payRow('Amount Paid', `<span style="font-weight:700;">₱${fmt(paid)}</span>`)}
+                    ${payRow('Order Total', `₱${fmt(total)}`)}
+                    ${!fullyPaid ? `
+                        <div style="display:flex; justify-content:space-between; color:#b45309;
+                                    margin-top:2px; border-top:1px dashed #fcd34d; padding-top:4px;">
+                            <span><strong>Remaining Balance:</strong></span>
+                            <span style="font-weight:700;">₱${fmt(balance)}</span>
+                        </div>` : ''}
+                </div>`;
+        }
+        else
+        {
+            inner = `
+                <button id="btnTriggerPaymentAdd"
+                    style="height:24px; padding:0 10px; background:#16a34a; border:none;
+                           border-radius:4px; font-size:11.5px; color:#fff; cursor:pointer; font-weight:500;">
+                    <i class="fa-solid fa-plus"></i> Add Payment
+                </button>
+                </div>
+                <div style="font-size:13px; color:#166534; font-style:italic;">
+                    No payment recorded for this order yet.
+                </div>`;
+        }
+
+        return `
+            <div style="margin-top:12px; padding:10px; background:#f0fdf4;
+                        border:1px solid #bbf7d0; border-radius:6px; font-family:system-ui,sans-serif;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <strong style="color:#166534; font-size:13.5px;">
+                        <i class="fa-solid fa-credit-card"></i> Payment Information
+                    </strong>
+                    ${inner}
+                <div id="inlinePaymentForm"
+                     style="display:none; margin-top:10px; padding-top:10px; border-top:1px dashed #bbf7d0;">
+                </div>
+            </div>`;
+    }
+
+    // Small helper for a payment detail row.
+    function payRow(label, valueHtml)
+    {
+        return `<div style="display:flex; justify-content:space-between;">
+                    <span><strong>${label}:</strong></span><span>${valueHtml}</span>
+                </div>`;
+    }
+
+
+    // ---- INLINE PAYMENT FORM ----
     function openInlinePaymentForm(isEdit, paymentObj)
     {
         const formDiv = document.getElementById('inlinePaymentForm');
         if (!formDiv) return;
 
-        const currentMethod = isEdit ? paymentObj.Pay_Method : '';
-        const currentAmount = isEdit ? paymentObj.Pay_Amount : '';
-
         formDiv.innerHTML = `
-            <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="display:flex; flex-direction:column; gap:8px;">
                 <div>
                     <label style="display:block; font-size:11.5px; color:#14532d; font-weight:600; margin-bottom:2px;">Payment Method</label>
-                    <input type="text" id="inlinePayMethod" value="${escapeHtml(currentMethod)}" placeholder="e.g., Cash, GCash, Bank Transfer" style="width:100%; height:30px; padding:0 8px; border:1px solid #cbd5e1; border-radius:4px; font-size:12px; box-sizing:border-box;">
+                    <input type="text" id="inlinePayMethod" value="${escapeHtml(isEdit ? paymentObj.Pay_Method : '')}"
+                        placeholder="e.g., Cash, GCash, Bank Transfer"
+                        style="width:100%; height:30px; padding:0 8px; border:1px solid #cbd5e1; border-radius:4px; font-size:12px; box-sizing:border-box;">
                 </div>
                 <div>
                     <label style="display:block; font-size:11.5px; color:#14532d; font-weight:600; margin-bottom:2px;">Amount Paid (₱)</label>
-                    <input type="number" id="inlinePayAmount" value="${currentAmount}" step="0.01" min="0" placeholder="0.00" style="width:100%; height:30px; padding:0 8px; border:1px solid #cbd5e1; border-radius:4px; font-size:12px; box-sizing:border-box;">
+                    <input type="number" id="inlinePayAmount" value="${isEdit ? paymentObj.Pay_Amount : ''}"
+                        step="0.01" min="0" placeholder="0.00"
+                        style="width:100%; height:30px; padding:0 8px; border:1px solid #cbd5e1; border-radius:4px; font-size:12px; box-sizing:border-box;">
                 </div>
-                <div style="display: flex; gap: 6px; justify-content: flex-end; margin-top: 4px;">
-                    <button id="btnSaveInlinePayment" style="height:26px; padding:0 12px; background:#16a34a; border:none; border-radius:4px; color:#fff; font-size:11.5px; font-weight:600; cursor:pointer;">Save Payment</button>
-                    <button id="btnCancelInlinePayment" style="height:26px; padding:0 12px; background:#cbd5e1; border:none; border-radius:4px; color:#334155; font-size:11.5px; cursor:pointer;">Cancel</button>
+                <div style="display:flex; gap:6px; justify-content:flex-end; margin-top:4px;">
+                    <button id="btnSaveInlinePayment"
+                        style="height:26px; padding:0 12px; background:#16a34a; border:none; border-radius:4px; color:#fff; font-size:11.5px; font-weight:600; cursor:pointer;">
+                        Save Payment
+                    </button>
+                    <button id="btnCancelInlinePayment"
+                        style="height:26px; padding:0 12px; background:#cbd5e1; border:none; border-radius:4px; color:#334155; font-size:11.5px; cursor:pointer;">
+                        Cancel
+                    </button>
                 </div>
-            </div>
-        `;
-
+            </div>`;
         formDiv.style.display = 'block';
 
-        document.getElementById('btnCancelInlinePayment').onclick = function() {
+        document.getElementById('btnCancelInlinePayment').onclick = () => {
             formDiv.style.display = 'none';
-            formDiv.innerHTML = '';
+            formDiv.innerHTML     = '';
         };
 
-        document.getElementById('btnSaveInlinePayment').onclick = async function() {
+        document.getElementById('btnSaveInlinePayment').onclick = async () =>
+        {
             const method = document.getElementById('inlinePayMethod').value.trim();
             const amount = document.getElementById('inlinePayAmount').value.trim();
+            if (!method || !amount) { alert('Please complete both fields.'); return; }
 
-            if (!method || !amount) {
-                alert("Please complete both input fields.");
-                return;
-            }
-
-            if (isEdit) {
+            if (isEdit)
+            {
                 const affected = await runUpdate('update_payment', [method, amount, paymentObj.Pay_ID]);
-                if (affected > 0) { 
-                    writeLog('payment', paymentObj.Pay_ID, `Payment updated for Order ID ${primaryId}`);
-                    alert(`Updated ${affected} row(s) successfully.`);
+                if (affected > 0) {
+                    await writeLog('payment', paymentObj.Pay_ID, `Payment updated for Order ID ${primaryId}`);
+                    alert('Payment updated successfully.');
+                } else {
+                    alert('Payment update processed.');
                 }
-                else alert("Payment layout processed successfully.");
-            } else {
+            }
+            else
+            {
                 const result = await runInsert('insert_payment', [primaryId, method, amount]);
-                if (result && result.affected_rows > 0) { 
-                    writeLog('payment', result.insert_id, `Payment added to Order ID ${primaryId}`);
-                    alert("Payment saved successfully!");
+                if (result?.affected_rows > 0) {
+                    await writeLog('payment', result.insert_id, `Payment added to Order ID ${primaryId}`);
+                    alert('Payment saved successfully!');
+                } else {
+                    alert('Failed to save payment.');
                 }
-                else alert("Failed to save payment.");
             }
 
-            modal.style.display = 'none';
-            subActions.style.display = 'none';
+            closeModal();
             runSelect(getActiveQueryName(), 'result-container');
         };
     }
+
 
     // ---- EDIT MODE ----
     function showEditMode()
     {
         const readonlyCols = TABLE_READONLY_COLS[currentTable] || [];
-        modalTitle.innerText = `Edit ${currentTable.toUpperCase()} (ID: ${primaryId})`;
-
-        subActions.innerHTML = '';
+        modalTitle.innerText     = `Edit ${currentTable.toUpperCase()} (ID: ${primaryId})`;
+        subActions.innerHTML     = '';
         subActions.style.display = 'none';
 
         let formHtml = '<div class="update-form">';
         columns.forEach((col, i) =>
         {
-            const currentVal = escapeHtml(String(row[col] ?? ''));
             const isPK       = (i === 0);
             const isReadonly = isPK || readonlyCols.includes(col);
-
-            formHtml += `
-                <div class="form-field">
-                    <label for="edit-field-${i}">
-                        ${escapeHtml(col)}${isPK ? ' <span class="pk-label">(ID — read only)</span>' : ''}
-                        ${(!isPK && isReadonly) ? ' <span class="pk-label">(read only)</span>' : ''}
-                    </label>
-                    <input
-                        id="edit-field-${i}"
-                        type="text"
-                        value="${currentVal}"
-                        ${isReadonly ? 'readonly' : ''}
-                    >
-                </div>`;
+            const note       = isPK ? ' <span class="pk-label">(ID — read only)</span>'
+                             : isReadonly ? ' <span class="pk-label">(read only)</span>' : '';
+            formHtml += buildFormField(`edit-field-${i}`, col, row[col], isReadonly, note);
         });
         formHtml += '</div>';
         modalDetails.innerHTML = formHtml;
 
         btnsModal.innerHTML = `
             <button id="btnUpdate" class="modal-btn warning">Confirm Update</button>
-            <button id="btnDelete" class="modal-btn cancel">Cancel</button>
+            <button id="btnCancel" class="modal-btn cancel">Cancel</button>
             <button id="btnClose"  class="modal-btn cancel">Close</button>
         `;
+        document.getElementById('btnCancel').onclick = () => showViewMode();
+        document.getElementById('btnClose').onclick  = () => closeModal();
 
-        document.getElementById('btnUpdate').onclick = async function ()
+        document.getElementById('btnUpdate').onclick = async () =>
         {
             const params = [];
-            columns.forEach((col, i) =>
-            {
-                if (i === 0) return;
-                if (readonlyCols.includes(col)) return;
+            columns.forEach((col, i) => {
+                if (i === 0 || readonlyCols.includes(col)) return;
                 params.push(document.getElementById(`edit-field-${i}`).value);
             });
             params.push(primaryId);
 
             const affected = await runUpdate(`update_${currentTable}`, params);
-
-            if (affected > 0)
-            {
+            if (affected > 0) {
                 await writeLog(currentTable, primaryId, `Record updated in ${currentTable}`);
                 alert(`Updated ${affected} row(s) successfully.`);
-            }
-            else
-            {
+            } else {
                 alert('Update failed or no values were changed.');
             }
 
-            modal.style.display = 'none';
+            closeModal();
             runSelect(getActiveQueryName(), 'result-container');
         };
-
-        document.getElementById('btnDelete').onclick = function () { showViewMode(); };
-        document.getElementById('btnClose').onclick  = function () { modal.style.display = 'none'; };
     }
+
 
     // ---- RELATED RECORDS MODE ----
     async function showRelatedRecords(tableName, id)
     {
-        modalTitle.innerText   = `Records List — ${tableName.toUpperCase()} ID: ${id}`;
-        modalDetails.innerHTML = '<p style="color:#888;font-size:13px;">Loading...</p>';
-
-        subActions.innerHTML = '';
-        subActions.style.display = 'none';
-
-        document.querySelector('#viewModal .modal-content').style.maxWidth = '800px';
+        modalTitle.innerText         = `Records List — ${tableName.toUpperCase()} ID: ${id}`;
+        modalDetails.innerHTML       = '<p style="color:#888; font-size:13px;">Loading...</p>';
+        subActions.innerHTML         = '';
+        subActions.style.display     = 'none';
+        modalContent.style.maxWidth  = '800px';
 
         btnsModal.innerHTML = `
             <button id="btnBack"  class="modal-btn warning">Back</button>
             <button id="btnClose" class="modal-btn cancel">Close</button>
         `;
-        document.getElementById('btnBack').onclick  = function () { showViewMode(); };
-        document.getElementById('btnClose').onclick = function ()
-        {
-            document.querySelector('#viewModal .modal-content').style.maxWidth = '450px';
-            modal.style.display = 'none';
-        };
+        document.getElementById('btnBack').onclick  = () => showViewMode();
+        document.getElementById('btnClose').onclick = () => closeModal();
 
         try
         {
             const queryName = tableName === 'orders' ? 'list_by_order' : 'list_by_purchase';
-            const res  = await fetch(`api/select.php?query=${queryName}&id=${encodeURIComponent(id)}`);
-            const json = await res.json();
+            const json      = await fetch(`api/select.php?query=${queryName}&id=${encodeURIComponent(id)}`).then(r => r.json());
 
-            if (json.error || !json.data || json.data.length === 0)
+            if (json.error || !json.data?.length)
             {
-                modalDetails.innerHTML = '<p style="color:#888;font-size:13px;">No item line breakdowns recorded.</p>';
+                modalDetails.innerHTML = '<p style="color:#888; font-size:13px;">No item line breakdowns recorded.</p>';
                 return;
             }
-
             renderRelatedTable(json.data, id);
         }
         catch (err)
         {
-            modalDetails.innerHTML = `<p style="color:#c0392b;font-size:13px;">Fetch failed: ${escapeHtml(err.message)}</p>`;
+            modalDetails.innerHTML = `<p style="color:#c0392b; font-size:13px;">Fetch failed: ${escapeHtml(err.message)}</p>`;
         }
     }
 
     function renderRelatedTable(data, orderId)
     {
         const cols = Object.keys(data[0]);
-        let tableHtml = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;">';
 
-        tableHtml += '<thead><tr>';
-        cols.forEach(col => {
-            tableHtml += `<th style="padding:6px 10px;background:#38414e;color:#fff;text-align:left;">${escapeHtml(col)}</th>`;
-        });
-        tableHtml += '<th style="padding:6px 10px;background:#38414e;color:#fff;text-align:left;">Options</th>';
-        tableHtml += '</tr></thead><tbody>';
+        const headerCells = cols.map(c =>
+            `<th style="padding:6px 10px; background:#38414e; color:#fff; text-align:left;">${escapeHtml(c)}</th>`
+        ).join('');
 
-        data.forEach((detailRow, ri) =>
+        const bodyRows = data.map((detailRow, ri) =>
         {
             const bg         = ri % 2 === 0 ? '#fff' : '#f8fafc';
             const rowDataB64 = btoa(unescape(encodeURIComponent(JSON.stringify(detailRow))));
+            const cells      = cols.map(c =>
+                `<td style="padding:6px 10px; border-bottom:1px solid #f1f5f9;">${escapeHtml(String(detailRow[c] ?? ''))}</td>`
+            ).join('');
 
-            tableHtml += `<tr style="background:${bg}">`;
-            cols.forEach(col => {
-                tableHtml += `<td style="padding:6px 10px;border-bottom:1px solid #f1f5f9;">${escapeHtml(String(detailRow[col] ?? ''))}</td>`;
-            });
-            tableHtml += `<td style="padding:6px 10px;border-bottom:1px solid #f1f5f9;">
-                <button
-                    onclick="handleRelatedEdit('${rowDataB64}', ${orderId})"
-                    style="height:26px;padding:0 10px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;font-size:11.5px;color:#475569;cursor:pointer;">
-                    Edit
-                </button>
-            </td>`;
-            tableHtml += '</tr>';
-        });
+            return `<tr style="background:${bg}">
+                        ${cells}
+                        <td style="padding:6px 10px; border-bottom:1px solid #f1f5f9;">
+                            <button onclick="handleRelatedEdit('${rowDataB64}', ${orderId})"
+                                style="height:26px; padding:0 10px; background:#f1f5f9; border:1px solid #e2e8f0;
+                                       border-radius:6px; font-size:11.5px; color:#475569; cursor:pointer;">
+                                Edit
+                            </button>
+                        </td>
+                    </tr>`;
+        }).join('');
 
-        tableHtml += '</tbody></table></div>';
-        modalDetails.innerHTML = tableHtml;
+        modalDetails.innerHTML = `
+            <div style="overflow-x:auto;">
+                <table style="width:100%; border-collapse:collapse; font-size:12px;">
+                    <thead><tr>${headerCells}<th style="padding:6px 10px; background:#38414e; color:#fff; text-align:left;">Options</th></tr></thead>
+                    <tbody>${bodyRows}</tbody>
+                </table>
+            </div>`;
     }
 
     function showRelatedEditMode(detailRow, orderId)
     {
-        const detailCols  = Object.keys(detailRow);
-        const detailPK    = detailRow[detailCols[0]];
+        const detailCols = Object.keys(detailRow);
+        const detailPK   = detailRow[detailCols[0]];
 
         modalTitle.innerText = `Edit Breakdown Record Line (ID: ${detailPK})`;
 
         let formHtml = '<div class="update-form">';
-        detailCols.forEach((col, i) =>
-        {
-            const currentVal = escapeHtml(String(detailRow[col] ?? ''));
+        detailCols.forEach((col, i) => {
             const isPK       = (i === 0);
             const isReadonly = isPK || RELATED_READONLY_COLS.includes(col);
-
-            formHtml += `
-                <div class="form-field">
-                    <label for="rel-field-${i}">
-                        ${escapeHtml(col)}${isPK ? ' <span class="pk-label">(ID — read only)</span>' : ''}
-                        ${(!isPK && isReadonly) ? ' <span class="pk-label">(read only)</span>' : ''}
-                    </label>
-                    <input
-                        id="rel-field-${i}"
-                        type="text"
-                        value="${currentVal}"
-                        ${isReadonly ? 'readonly' : ''}
-                    >
-                </div>`;
+            const note       = isPK ? ' <span class="pk-label">(ID — read only)</span>'
+                             : isReadonly ? ' <span class="pk-label">(read only)</span>' : '';
+            formHtml += buildFormField(`rel-field-${i}`, col, detailRow[col], isReadonly, note);
         });
         formHtml += '</div>';
         modalDetails.innerHTML = formHtml;
 
         btnsModal.innerHTML = `
             <button id="btnRelConfirm" class="modal-btn warning">Confirm Update</button>
-            <button id="btnRelCancel" class="modal-btn cancel">Cancel</button>
-            <button id="btnClose"     class="modal-btn cancel">Close</button>
+            <button id="btnRelCancel"  class="modal-btn cancel">Cancel</button>
+            <button id="btnClose"      class="modal-btn cancel">Close</button>
         `;
+        document.getElementById('btnRelCancel').onclick = () => showRelatedRecords(currentTable, orderId);
+        document.getElementById('btnClose').onclick     = () => closeModal();
 
-        document.getElementById('btnRelConfirm').onclick = async function ()
+        document.getElementById('btnRelConfirm').onclick = async () =>
         {
             const params = [];
-            detailCols.forEach((col, i) =>
-            {
-                if (i === 0) return;
-                if (RELATED_READONLY_COLS.includes(col)) return;
+            detailCols.forEach((col, i) => {
+                if (i === 0 || RELATED_READONLY_COLS.includes(col)) return;
                 params.push(document.getElementById(`rel-field-${i}`).value);
             });
             params.push(detailPK);
 
-            const childUpdateKey = currentTable === 'orders' ? 'update_orderdetail' : 'update_purchasedetail';
-            const affected = await runUpdate(childUpdateKey, params);
-
-            if (affected > 0) alert('Breakdown line item updated successfully.');
-            else alert('Update failed or no values were changed.');
-
+            const key      = currentTable === 'orders' ? 'update_orderdetail' : 'update_purchasedetail';
+            const affected = await runUpdate(key, params);
+            alert(affected > 0 ? 'Breakdown line updated successfully.' : 'Update failed or no values changed.');
             showRelatedRecords(currentTable, orderId);
-        };
-
-        document.getElementById('btnRelCancel').onclick = function () {
-            showRelatedRecords(currentTable, orderId);
-        };
-
-        document.getElementById('btnClose').onclick = function ()
-        {
-            document.querySelector('#viewModal .modal-content').style.maxWidth = '450px';
-            modal.style.display = 'none';
         };
     }
 
@@ -615,61 +560,55 @@ function ViewOptions(rowDataB64)
 }
 
 
-// ==== ADD / INSERT MODAL ================================
+// ================================================================
+// LIVE-SEARCH HELPERS
+// ================================================================
 
-// ---- Live-search field builder ----
-// Returns { wrapperHtml, bindFn }
-// wrapperHtml : HTML string to inject into the form
-// bindFn(containerId) : call after innerHTML is set to wire up events
-// ---- Unified live-search wirer ----
-// Call AFTER the input/drop/hidden elements already exist in the DOM.
-function wireLiveSearch({ inputId, dropId, hiddenId, searchQuery, onSelect })
+// Builds a labelled live-search field HTML snippet.
+// Call wireLiveSearch() after injecting it into the DOM.
+function makeLiveSearchField(inputId, dropId, hiddenId, labelText, placeholder)
+{
+    return `
+        <div class="form-field">
+            <label>${escapeHtml(labelText)}</label>
+            <div class="ls-wrapper">
+                <input id="${inputId}" type="text" placeholder="${escapeHtml(placeholder)}" autocomplete="off"
+                    style="width:100%; height:36px; padding:0 10px; border:1px solid #cbd5e1;
+                           border-radius:6px; font-size:13px; box-sizing:border-box;">
+                <div class="ls-dropdown" id="${dropId}" style="display:none;"></div>
+                <input type="hidden" id="${hiddenId}">
+            </div>
+        </div>`;
+}
+
+// Wires live-search behaviour onto existing DOM elements.
+// The dropdown is portal-appended to <body> to escape overflow:hidden ancestors.
+function wireLiveSearch({ inputId, hiddenId, searchQuery, onSelect })
 {
     const input  = document.getElementById(inputId);
     const hidden = document.getElementById(hiddenId);
+    if (!input || !hidden) { console.warn('wireLiveSearch: elements not found', { inputId, hiddenId }); return; }
 
-    // We ignore dropId entirely — the dropdown is portal-rendered on <body>
-    // to escape any overflow:hidden ancestors in the modal.
-    if (!input || !hidden)
-    {
-        console.warn('wireLiveSearch: element(s) not found', { inputId, hiddenId });
-        return;
-    }
-
-    // Create a floating dropdown portal on <body>
-    const drop = document.createElement('div');
-    drop.id = `portal-drop-${inputId}`;
+    // Portal dropdown
+    const drop    = document.createElement('div');
+    drop.id       = `portal-drop-${inputId}`;
     drop.style.cssText = `
-        position: fixed;
-        z-index: 99999;
-        background: #fff;
-        border: 1px solid #cbd5e1;
-        border-top: none;
-        border-radius: 0 0 6px 6px;
-        max-height: 200px;
-        overflow-y: auto;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-        display: none;
-        min-width: 200px;
-    `;
+        position:fixed; z-index:99999; background:#fff;
+        border:1px solid #cbd5e1; border-top:none;
+        border-radius:0 0 6px 6px; max-height:200px; overflow-y:auto;
+        box-shadow:0 4px 16px rgba(0,0,0,.12); display:none; min-width:200px;`;
     document.body.appendChild(drop);
 
-    // Position the portal under the input
-    function positionDrop()
-    {
-        const rect        = input.getBoundingClientRect();
-        drop.style.top    = `${rect.bottom}px`;
-        drop.style.left   = `${rect.left}px`;
-        drop.style.width  = `${rect.width}px`;
-    }
+    const position = () => {
+        const r       = input.getBoundingClientRect();
+        drop.style.top   = `${r.bottom}px`;
+        drop.style.left  = `${r.left}px`;
+        drop.style.width = `${r.width}px`;
+    };
 
-    // Clean up portal when modal closes (observe input removal)
+    // Auto-remove portal when input leaves the DOM
     const observer = new MutationObserver(() => {
-        if (!document.body.contains(input))
-        {
-            drop.remove();
-            observer.disconnect();
-        }
+        if (!document.body.contains(input)) { drop.remove(); observer.disconnect(); }
     });
     observer.observe(document.body, { childList: true, subtree: true });
 
@@ -681,40 +620,31 @@ function wireLiveSearch({ inputId, dropId, hiddenId, searchQuery, onSelect })
         clearTimeout(debounce);
 
         const term = this.value.trim();
-        if (term.length < 1)
-        {
-            drop.innerHTML      = '';
-            drop.style.display  = 'none';
-            return;
-        }
+        if (!term) { drop.innerHTML = ''; drop.style.display = 'none'; return; }
 
         debounce = setTimeout(async () =>
         {
             try
             {
-                const res  = await fetch(`api/search.php?query=${searchQuery}&term=${encodeURIComponent(term)}`);
-                const json = await res.json();
+                const json = await fetch(`api/search.php?query=${searchQuery}&term=${encodeURIComponent(term)}`).then(r => r.json());
                 drop.innerHTML = '';
 
-                if (!json.data || json.data.length === 0)
+                if (!json.data?.length)
                 {
-                    drop.innerHTML     = '<div class="ls-option no-result" style="padding:8px 12px; font-size:12px; color:#94a3b8; font-style:italic;">No results found</div>';
-                    positionDrop();
+                    drop.innerHTML     = '<div style="padding:8px 12px; font-size:12px; color:#94a3b8; font-style:italic;">No results found</div>';
+                    position();
                     drop.style.display = 'block';
                     return;
                 }
 
                 json.data.forEach(item =>
                 {
-                    const opt       = document.createElement('div');
-                    opt.className   = 'ls-option';
-                    opt.textContent = item.label;
+                    const opt         = document.createElement('div');
+                    opt.textContent   = item.label;
                     opt.style.cssText = 'padding:8px 12px; font-size:12.5px; color:#334155; cursor:pointer; border-bottom:1px solid #f1f5f9;';
-
-                    opt.addEventListener('mouseover',  () => { opt.style.background = '#f0f9ff'; opt.style.color = '#0369a1'; });
-                    opt.addEventListener('mouseout',   () => { opt.style.background = '';        opt.style.color = '#334155'; });
-                    opt.addEventListener('mousedown',  (e) =>
-                    {
+                    opt.addEventListener('mouseover', () => { opt.style.background = '#f0f9ff'; opt.style.color = '#0369a1'; });
+                    opt.addEventListener('mouseout',  () => { opt.style.background = '';        opt.style.color = '#334155'; });
+                    opt.addEventListener('mousedown', e => {
                         e.preventDefault();
                         input.value             = item.label;
                         hidden.value            = item.id;
@@ -723,123 +653,64 @@ function wireLiveSearch({ inputId, dropId, hiddenId, searchQuery, onSelect })
                         drop.innerHTML          = '';
                         if (onSelect) onSelect(item);
                     });
-
                     drop.appendChild(opt);
                 });
 
-                positionDrop();
+                position();
                 drop.style.display = 'block';
             }
-            catch (err) { console.error('Live search fetch error:', err); }
+            catch (err) { console.error('Live search error:', err); }
         }, 220);
     });
 
-    input.addEventListener('blur', () =>
-    {
-        setTimeout(() => { drop.style.display = 'none'; }, 180);
-    });
-
-    input.addEventListener('focus', () =>
-    {
-        if (drop.children.length > 0)
-        {
-            positionDrop();
-            drop.style.display = 'block';
-        }
-    });
-
-    // Reposition if window scrolls or resizes while open
-    window.addEventListener('scroll',  positionDrop, true);
-    window.addEventListener('resize',  positionDrop);
+    input.addEventListener('blur',  () => { setTimeout(() => { drop.style.display = 'none'; }, 180); });
+    input.addEventListener('focus', () => { if (drop.children.length) { position(); drop.style.display = 'block'; } });
+    window.addEventListener('scroll', position, true);
+    window.addEventListener('resize', position);
 }
 
 
-// ---- Live-search HTML snippet builder (no binding — call wireLiveSearch after DOM insert) ----
-function makeLiveSearchField(inputId, dropId, hiddenId, labelText, placeholder)
-{
-    return `
-        <div class="form-field">
-            <label>${escapeHtml(labelText)}</label>
-            <div class="ls-wrapper">
-                <input
-                    id="${inputId}"
-                    type="text"
-                    placeholder="${escapeHtml(placeholder)}"
-                    autocomplete="off"
-                    style="width:100%; height:36px; padding:0 10px; border:1px solid #cbd5e1;
-                           border-radius:6px; font-size:13px; box-sizing:border-box;"
-                >
-                <div class="ls-dropdown" id="${dropId}" style="display:none;"></div>
-                <input type="hidden" id="${hiddenId}">
-            </div>
-        </div>`;
-}
-
+// ================================================================
+// ADD / INSERT MODAL
+// ================================================================
 
 function showAddModal()
 {
     const activeBtn    = document.querySelector('.tab-btn.active');
     const currentTable = activeBtn ? activeBtn.dataset.query : 'customer';
     const fields       = TABLE_INSERT_FIELDS[currentTable];
-
     if (!fields) { alert(`No insert form defined for table: ${currentTable}`); return; }
 
-    const modal        = document.getElementById('viewModal');
-    const modalTitle   = document.getElementById('modalTitle');
-    const modalDetails = document.getElementById('modalDetails');
-    const subActions   = document.getElementById('modalSubActions');
-    const btnsModal    = document.querySelector('.modal-buttons');
+    const { modal, modalTitle, modalDetails, subActions, btnsModal, modalContent } = getModalRefs();
+    const isTransaction = (currentTable === 'orders' || currentTable === 'purchase');
 
-    const isTransactionTable = (currentTable === 'orders' || currentTable === 'purchase');
+    modalTitle.innerText         = `Add New ${currentTable.toUpperCase()} Record`;
+    subActions.innerHTML         = '';
+    subActions.style.display     = 'none';
+    modalContent.style.maxWidth  = isTransaction ? '700px' : '450px';
+    modalContent.style.width     = isTransaction ? '95%'   : '';
 
-    modalTitle.innerText = `Add New ${currentTable.toUpperCase()} Record`;
-    if (subActions) { subActions.innerHTML = ''; subActions.style.display = 'none'; }
-
-    // Track live-search binders that need wiring after innerHTML is set
-    const liveSearchBinders = [];
-
-    // ---- Build main fields ----
+    // ---- Main fields ----
     let formHtml = '<div class="update-form">';
     fields.forEach((field, i) =>
     {
-        if (currentTable === 'orders' && field.key === 'Cust_ID')
-        {
-            formHtml += makeLiveSearchField(
-                'ls-input-cust', 'ls-drop-cust', 'hidden-cust-id',
-                'Customer Name', 'Type to search customer...'
-            );
-            return;
-        }
-
+        if (currentTable === 'orders'   && field.key === 'Cust_ID')
+            return void (formHtml += makeLiveSearchField('ls-input-cust', 'ls-drop-cust', 'hidden-cust-id', 'Customer Name', 'Type to search customer...'));
         if (currentTable === 'purchase' && field.key === 'Supply_ID')
-        {
-            formHtml += makeLiveSearchField(
-                'ls-input-supp', 'ls-drop-supp', 'hidden-supp-id',
-                'Supplier Name', 'Type to search supplier...'
-            );
-            return;
-        }
+            return void (formHtml += makeLiveSearchField('ls-input-supp', 'ls-drop-supp', 'hidden-supp-id', 'Supplier Name', 'Type to search supplier...'));
 
         formHtml += `
             <div class="form-field">
                 <label for="add-field-${i}">${escapeHtml(field.label)}</label>
-                <input
-                    id="add-field-${i}"
-                    type="${field.type}"
-                    placeholder="${escapeHtml(field.label)}"
-                    ${field.type === 'number' ? 'min="0" step="any"' : ''}
-                >
+                <input id="add-field-${i}" type="${field.type}" placeholder="${escapeHtml(field.label)}"
+                    ${field.type === 'number' ? 'min="0" step="any"' : ''}>
             </div>`;
     });
     formHtml += '</div>';
 
-    // ---- Transaction table: item lines section ----
-    if (isTransactionTable)
+    // ---- Item lines section (transactions only) ----
+    if (isTransaction)
     {
-        const modalContent = document.querySelector('#viewModal .modal-content');
-        modalContent.style.maxWidth = '700px';
-        modalContent.style.width    = '95%';
-
         formHtml += `
             <div style="margin-top:20px; border-top:1px solid #e2e8f0; padding-top:15px;">
                 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
@@ -861,211 +732,156 @@ function showAddModal()
 
     modalDetails.style.display = 'block';
     modalDetails.innerHTML     = formHtml;
+    modal.style.display        = 'flex';
 
-    // Wire main form live-searches AFTER innerHTML is set
+    // Wire main live-searches after DOM is ready
     if (currentTable === 'orders')
-    {
-        wireLiveSearch({ inputId: 'ls-input-cust', dropId: 'ls-drop-cust', hiddenId: 'hidden-cust-id', searchQuery: 'customer' });
-    }
+        wireLiveSearch({ inputId: 'ls-input-cust', hiddenId: 'hidden-cust-id', searchQuery: 'customer' });
     if (currentTable === 'purchase')
-    {
-        wireLiveSearch({ inputId: 'ls-input-supp', dropId: 'ls-drop-supp', hiddenId: 'hidden-supp-id', searchQuery: 'supplier' });
-    }
+        wireLiveSearch({ inputId: 'ls-input-supp', hiddenId: 'hidden-supp-id', searchQuery: 'supplier' });
 
     btnsModal.innerHTML = `
         <button id="btnConfirmAdd" class="modal-btn confirm-add">Confirm Add</button>
         <button id="btnCancelAdd"  class="modal-btn cancel">Cancel</button>
     `;
-    modal.style.display = 'flex';
 
     // ---- Item-line row generator ----
     let lineCounter = 0;
     function generateLineRow()
     {
-        const container = document.getElementById('itemLinesContainer');
-        const rowId     = `line_row_${++lineCounter}`;
-        const isOrders  = currentTable === 'orders';
+        const isOrders    = currentTable === 'orders';
+        const searchQuery = isOrders ? 'dstock' : 'product';
+        const n           = ++lineCounter;
+        const lsId        = `line_name_${n}`;
+        const hiddenId    = `line_hidden_id_${n}`;
+        const priceId     = `line_price_${n}`;
+        const qtyId       = `line_qty_${n}`;
 
-        const searchQuery   = isOrders ? 'dstock'  : 'product';
-        const idPlaceholder = isOrders ? 'DStock ID' : 'Product ID';
-        const lsId          = `line_name_${lineCounter}`;
-        const hiddenId      = `line_hidden_id_${lineCounter}`;
-        const priceId       = `line_price_${lineCounter}`;
-        const qtyId         = `line_qty_${lineCounter}`;
+        const rowDiv      = document.createElement('div');
+        rowDiv.className  = 'receipt-item-row';
+        rowDiv.style.cssText = 'display:flex; gap:8px; align-items:flex-start; background:#f8fafc; padding:8px; border:1px solid #e2e8f0; border-radius:6px;';
 
-        const rowDiv = document.createElement('div');
-        rowDiv.id        = rowId;
-        rowDiv.className = 'receipt-item-row';
-        rowDiv.style     = 'display:flex; gap:8px; align-items:flex-start; background:#f8fafc; padding:8px; border:1px solid #e2e8f0; border-radius:6px;';
+        const priceAttrs = isOrders
+            ? 'readonly style="width:100%; height:30px; padding:0 8px; border:1px solid #cbd5e1; border-radius:4px; font-size:12px; box-sizing:border-box; background:#f1f5f9; color:#64748b;"'
+            : 'style="width:100%; height:30px; padding:0 8px; border:1px solid #cbd5e1; border-radius:4px; font-size:12px; box-sizing:border-box;"';
 
         rowDiv.innerHTML = `
-            <!-- Name live-search (flex: 2.5) -->
             <div style="flex:2.5; position:relative;">
-                <input
-                    id="ls-input-${lsId}"
-                    type="text"
+                <input id="ls-input-${lsId}" type="text"
                     placeholder="${isOrders ? 'Search Product (DStock)' : 'Search Product'}"
                     autocomplete="off"
-                    style="width:100%; height:30px; padding:0 8px; border:1px solid #cbd5e1;
-                           border-radius:4px; font-size:12px; box-sizing:border-box;"
-                >
-                <div class="ls-dropdown" id="ls-drop-${lsId}"></div>
+                    style="width:100%; height:30px; padding:0 8px; border:1px solid #cbd5e1; border-radius:4px; font-size:12px; box-sizing:border-box;">
                 <input type="hidden" id="${hiddenId}">
             </div>
-
-            <!-- Qty -->
             <div style="flex:1;">
                 <input id="${qtyId}" type="number" placeholder="Qty" min="1"
-                    style="width:100%; height:30px; padding:0 8px; border:1px solid #cbd5e1;
-                           border-radius:4px; font-size:12px; box-sizing:border-box;">
+                    style="width:100%; height:30px; padding:0 8px; border:1px solid #cbd5e1; border-radius:4px; font-size:12px; box-sizing:border-box;">
             </div>
-
-            <!-- Unit Price -->
             <div style="flex:1.5;">
-                <input id="${priceId}" type="number" placeholder="Unit Price (₱)" step="0.01" min="0"
-                    style="width:100%; height:30px; padding:0 8px; border:1px solid #cbd5e1;
-                           border-radius:4px; font-size:12px; box-sizing:border-box;"
-                    ${isOrders ? 'readonly style="width:100%; height:30px; padding:0 8px; border:1px solid #cbd5e1; border-radius:4px; font-size:12px; box-sizing:border-box; background:#f1f5f9; color:#64748b;"' : ''}>
+                <input id="${priceId}" type="number" placeholder="Unit Price (₱)" step="0.01" min="0" ${priceAttrs}>
             </div>
-
-            <!-- Remove -->
             <button type="button" class="btn-remove-line"
                 style="height:30px; width:32px; flex-shrink:0; background:#fee2e2; border:1px solid #fca5a5;
-                       border-radius:4px; color:#b91c1c; cursor:pointer; display:flex;
-                       align-items:center; justify-content:center; margin-top:0;">
+                       border-radius:4px; color:#b91c1c; cursor:pointer; display:flex; align-items:center; justify-content:center;">
                 <i class="fa-solid fa-trash-can" style="font-size:11px;"></i>
-            </button>
-        `;
+            </button>`;
 
         rowDiv.querySelector('.btn-remove-line').onclick = () => rowDiv.remove();
-        container.appendChild(rowDiv);
+        document.getElementById('itemLinesContainer').appendChild(rowDiv);
 
-        // Replace everything from "Wire live-search for this row" to the end of generateLineRow()
         wireLiveSearch({
             inputId:     `ls-input-${lsId}`,
-            dropId:      `ls-drop-${lsId}`,
-            hiddenId:    hiddenId,
-            searchQuery: searchQuery,
-            onSelect: (item) =>
-            {
-                // Autofill price only for orders (DStock carries Prod_Price)
+            hiddenId,
+            searchQuery,
+            onSelect: item => {
                 if (isOrders && item.price != null)
                 {
-                    const priceEl = document.getElementById(priceId);
-                    if (priceEl)
-                    {
-                        priceEl.value            = parseFloat(item.price).toFixed(2);
-                        priceEl.style.borderColor = '#22c55e';
-                    }
+                    const el = document.getElementById(priceId);
+                    if (el) { el.value = parseFloat(item.price).toFixed(2); el.style.borderColor = '#22c55e'; }
                 }
-            }
+            },
         });
     }
 
-    if (isTransactionTable)
+    if (isTransaction)
     {
         generateLineRow();
         document.getElementById('btnAddItemLine').onclick = generateLineRow;
     }
 
-    // ---- Close helper ----
-    function closeModalAndReset()
-    {
-        document.querySelector('#viewModal .modal-content').style.maxWidth = '450px';
-        modal.style.display = 'none';
-    }
+    // ---- Close / reset ----
+    const closeAndReset = () => {
+        modalContent.style.maxWidth = '450px';
+        modalContent.style.width    = '';
+        modal.style.display         = 'none';
+    };
+    document.getElementById('btnCancelAdd').onclick = closeAndReset;
 
     // ---- Confirm Add ----
-    document.getElementById('btnConfirmAdd').onclick = async function ()
+    document.getElementById('btnConfirmAdd').onclick = async () =>
     {
-        // Collect main field params, substituting resolved IDs for live-search fields
-        const params = fields.map((field, i) =>
-        {
-            if (currentTable === 'orders'   && field.key === 'Cust_ID')
-                return document.getElementById('hidden-cust-id').value.trim();
-            if (currentTable === 'purchase' && field.key === 'Supply_ID')
-                return document.getElementById('hidden-supp-id').value.trim();
-
-            const input = document.getElementById(`add-field-${i}`);
-            return input ? input.value.trim() : '';
+        // Collect params — substitute hidden IDs for live-search fields
+        const params = fields.map((field, i) => {
+            if (currentTable === 'orders'   && field.key === 'Cust_ID')   return document.getElementById('hidden-cust-id').value.trim();
+            if (currentTable === 'purchase' && field.key === 'Supply_ID') return document.getElementById('hidden-supp-id').value.trim();
+            return document.getElementById(`add-field-${i}`)?.value.trim() ?? '';
         });
 
-        // Validate: live-search fields need a resolved ID (not just typed text)
-        if (currentTable === 'orders' && !document.getElementById('hidden-cust-id').value)
-        {
-            alert('Please select a valid Customer from the dropdown.');
-            return;
-        }
+        // Validate live-search selections
+        if (currentTable === 'orders'   && !document.getElementById('hidden-cust-id').value)
+            { alert('Please select a valid Customer from the dropdown.'); return; }
         if (currentTable === 'purchase' && !document.getElementById('hidden-supp-id').value)
-        {
-            alert('Please select a valid Supplier from the dropdown.');
-            return;
-        }
+            { alert('Please select a valid Supplier from the dropdown.'); return; }
 
-        const emptyField = fields.find((f, i) =>
-        {
+        // Validate regular fields
+        const emptyField = fields.find((f, i) => {
             if (currentTable === 'orders'   && f.key === 'Cust_ID')   return false;
             if (currentTable === 'purchase' && f.key === 'Supply_ID') return false;
-            return params[i] === '';
+            return !params[i];
         });
         if (emptyField) { alert(`Please fill in: ${emptyField.label}`); return; }
 
-        // Collect + validate item lines
+        // Collect and validate item lines
         let linesData = [];
-        if (isTransactionTable)
+        if (isTransaction)
         {
-            const rowElements = document.querySelectorAll('.receipt-item-row');
-            if (rowElements.length === 0)
-            {
-                alert('You must include at least 1 item breakdown line.');
-                return;
-            }
+            const rows = [...document.querySelectorAll('.receipt-item-row')];
+            if (!rows.length) { alert('You must include at least 1 item breakdown line.'); return; }
 
             let valid = true;
-            rowElements.forEach(row =>
-            {
-                const hiddenInput = row.querySelector('input[type="hidden"]');
-                const qtyInput    = row.querySelector('input[placeholder="Qty"]');
-                const priceInput  = row.querySelector('input[placeholder="Unit Price (₱)"]');
-
-                const targetId = hiddenInput ? hiddenInput.value.trim() : '';
-                const qty      = qtyInput    ? qtyInput.value.trim()    : '';
-                const price    = priceInput  ? priceInput.value.trim()  : '';
-
+            rows.forEach(row => {
+                const targetId = row.querySelector('input[type="hidden"]')?.value.trim() ?? '';
+                const qty      = row.querySelector('input[placeholder="Qty"]')?.value.trim()           ?? '';
+                const price    = row.querySelector('input[placeholder="Unit Price (₱)"]')?.value.trim() ?? '';
                 if (!targetId) { valid = false; alert('Please select a product from the dropdown for all item lines.'); }
                 if (!qty || !price) valid = false;
                 linesData.push({ targetId, qty, price });
             });
-
             if (!valid) { alert('Please fill out all fields in your item lines.'); return; }
         }
-        
+
         const result = await runInsert(`insert_${currentTable}`, params);
 
-        if (result && result.affected_rows > 0)
+        if (result?.affected_rows > 0)
         {
-            const generatedParentId = result.insert_id; // declare FIRST
+            const newId    = result.insert_id;
+            await writeLog(currentTable, newId, `New ${currentTable} record added`);
 
-            await writeLog(currentTable, generatedParentId, `New ${currentTable} record added`); // THEN use it
-
-            if (isTransactionTable)
+            if (isTransaction)
             {
                 const childKey = currentTable === 'orders' ? 'insert_orderdetail' : 'insert_purchasedetail';
                 for (const line of linesData)
-                    await runInsert(childKey, [generatedParentId, line.targetId, line.qty, line.price]);
+                    await runInsert(childKey, [newId, line.targetId, line.qty, line.price]);
             }
 
-            alert(`Record posted successfully! (Generated ID: ${generatedParentId}).`);
+            alert(`Record posted successfully! (Generated ID: ${newId}).`);
         }
         else
         {
             alert('Insert failed. Please check your inputs.');
         }
 
-        // Always close and refresh regardless of outcome
-        closeModalAndReset();
+        closeAndReset();
         runSelect(getActiveQueryName(), 'result-container');
     };
-
-    document.getElementById('btnCancelAdd').onclick = closeModalAndReset;
 }
