@@ -212,7 +212,6 @@ td button:hover
     color: #fff;
 }
 
-
 /* ==== RESULT CONTAINER =============================== */
 
 #result-container
@@ -316,7 +315,8 @@ tbody tr:hover
     z-index: 9999;
 }
 
-.modal-content {
+.modal-content 
+{
     background: #fff;
     border-radius: 8px;
     padding: 20px;
@@ -352,7 +352,8 @@ tbody tr:hover
     margin-bottom: 16px;
 }
 
-#modalDetails {
+#modalDetails 
+{
     margin-bottom: 15px;
     padding-right: 6px; /* Padding offset so scroll track doesn't overlap fields */
 
@@ -360,7 +361,8 @@ tbody tr:hover
     flex: 1;
     overflow-y: auto; 
 }
-.modal-buttons {
+.modal-buttons 
+{
     display: flex;
     justify-content: flex-end;
     gap: 10px;
@@ -679,13 +681,4 @@ tbody tr:hover
 #report-container tr:last-child td
 {
     border-bottom: none;
-}
-
-
-/* ==== RESPONSIVE ===================================== */
-
-@media (max-width: 600px)
-{
-    .site-header { padding: 0 1rem; }
-    td, th       { padding: 10px 12px; }
 }
