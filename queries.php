@@ -29,6 +29,13 @@ $SELECT_QUERIES = [
         FROM deliverystock ds
         JOIN product p ON p.Prod_ID = ds.Prod_ID",
 
+    'purchase' =>
+        "SELECT pu.Pur_ID, pu.Pur_Date, pu.Supply_ID, s.Supply_Name
+        FROM purchase pu
+        JOIN supplier s ON s.Supply_ID = pu.Supply_ID
+        JOIN purchasedetails pd ON pd.Pur_ID = pu.Pur_ID
+        JOIN product p ON p.Prod_ID = pd.Prod_ID
+        ORDER BY pu.Pur_Date DESC",
     
     // ==== REPORT ================================
  
@@ -96,6 +103,16 @@ $SELECT_QUERIES = [
         'sql'   => "SELECT * FROM payment WHERE Order_ID = ?",
         'types' => 'i',
     ],
+
+    'list_by_purchase' => [
+        'sql'   => "SELECT pd.PurDet_ID, pr.Prod_Name, pd.Pur_Quantity, pd.Pur_UnitPrice,
+                    (pd.Pur_Quantity * pd.Pur_UnitPrice) AS Total_Price
+                    FROM purchase pu
+                    JOIN purchasedetails pd ON pd.Pur_ID = pu.Pur_ID
+                    JOIN product pr ON pr.Prod_ID = pd.Prod_ID
+                    WHERE pu.Pur_ID = ?",
+        'types' => 'i',
+    ],
 ];
 
 // ==== DELETE ============================================
@@ -141,9 +158,9 @@ $UPDATE_QUERIES = [
     ],
     'update_payment' => [
         'sql'   => "UPDATE payment
-                    SET Order_ID = ?, Pay_Method = ?, Pay_Amount = ?
+                    SET Pay_Method = ?, Pay_Amount = ?
                     WHERE Pay_ID = ?",
-        'types' => 'ssdi',
+        'types' => 'sdi',
     ],
     'update_supplier' => [
         'sql'   => "UPDATE supplier
@@ -169,43 +186,55 @@ $UPDATE_QUERIES = [
                     WHERE OrDet_ID = ?",
         'types' => 'idi',
     ],
+    'update_purchasedetail' => [
+        'sql'   => "UPDATE purchasedetails
+                    SET Pur_Quantity = ?, Pur_UnitPrice = ?
+                    WHERE PurDet_ID = ?",
+        'types' => 'idi',
+    ],
 ];
 
 $INSERT_QUERIES = [
+
     'insert_customer' => [
         'sql'   => "INSERT INTO customer (Cust_Name, Cust_Address, Cust_PhoneNum)
                     VALUES (?, ?, ?)",
         'types' => 'sss',
     ],
- 
     'insert_product' => [
         'sql'   => "INSERT INTO product (Prod_Name, Prod_Stock, Prod_Price, Supply_ID)
                     VALUES (?, ?, ?, ?)",
-        'types' => 'sddi',   // name, stock (decimal), price (decimal), supplier FK (int)
+        'types' => 'sddi',
     ],
- 
     'insert_supplier' => [
         'sql'   => "INSERT INTO supplier (Supply_Name, Supply_PhoneNum, Supply_City, Supply_State, Supply_ZipCode)
                     VALUES (?, ?, ?, ?, ?)",
         'types' => 'sssss',
     ],
- 
     'insert_orders' => [
         'sql'   => "INSERT INTO orders (Order_Date, Cust_ID)
                     VALUES (?, ?)",
         'types' => 'si',
     ],
- 
+    'insert_purchase' => [
+        'sql'   => "INSERT INTO purchase (Pur_Date, Supply_ID)
+                    VALUES (?, ?)",
+        'types' => 'si',
+    ],
     'insert_payment' => [
         'sql'   => "INSERT INTO payment (Order_ID, Pay_Method, Pay_Amount)
                     VALUES (?, ?, ?)",
         'types' => 'isd',
     ],
- 
-    'insert_deliverystock' => [
-        'sql'   => "INSERT INTO deliverystock (Prod_ID, DStock_Date, DStock_Stock)
-                    VALUES (?, ?, ?)",
-        'types' => 'isi',
+    'insert_orderdetail' => [
+        'sql'   => "INSERT INTO orderdetails (Order_ID, DStock_ID, OrDet_Quantity, OrDet_UnitPrice)
+                    VALUES (?, ?, ?, ?)",
+        'types' => 'iiid',
+    ],
+    'insert_purchasedetail' => [
+        'sql'   => "INSERT INTO purchasedetails (Pur_ID, Prod_ID, Pur_Quantity, Pur_UnitPrice)
+                    VALUES (?, ?, ?, ?)",
+        'types' => 'iiid',
     ],
 ];
 ?>

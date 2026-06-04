@@ -53,14 +53,16 @@
     <div class="table-nav">
         <button class="tab-btn active" data-query="customer"      onclick="switchTable(this, 'customer')">
             <i class="fa-solid fa-address-book"></i>Customer List</button>
+        <button class="tab-btn"        data-query="supplier"      onclick="switchTable(this, 'supplier')">
+            <i class="fa-solid fa-warehouse"></i>Suppliers</button>
         <button class="tab-btn"        data-query="orders"        onclick="switchTable(this, 'orders')">
             <i class="fa-solid fa-shopping-cart"></i>Orders List</button>
+            <button class="tab-btn"        data-query="purchase"      onclick="switchTable(this, 'purchase')">
+            <i class="fa-solid fa-clipboard"></i>Purchase List</button>
         <button class="tab-btn"        data-query="product"       onclick="switchTable(this, 'product')">
             <i class="fa-solid fa-box-open"></i>Product Catalog</button>
-        <button class="tab-btn"        data-query="supplier"      onclick="switchTable(this, 'supplier')">
-            <i class="fa-solid fa-truck"></i>Suppliers</button>
         <button class="tab-btn"        data-query="deliverystock" onclick="switchTable(this, 'deliverystock')">
-            <i class="fa-solid fa-warehouse"></i>Delivery Stock</button>
+            <i class="fa-solid fa-truck"></i>Delivery Stock</button>
     </div>
 
     <!-- Add more SELECT buttons here, following the same pattern -->
@@ -108,17 +110,21 @@
     ====================================================== -->
 
     <div id="viewModal" class="modal-backdrop" style="display: none;">
-        <div class="modal-content">
-            <h3 id="modalTitle">Record Options</h3>
-            <hr>
-            <div id="modalDetails"></div>
-            <div class="modal-buttons">
-                <button id="btnUpdate" class="modal-btn warning">Update Record</button>
-                <button id="btnDelete" class="modal-btn danger">Delete Record</button>
-                <button id="btnClose"  class="modal-btn cancel">Close</button>
-            </div>
+    <div class="modal-content">
+        <h3 id="modalTitle">Record Options</h3>
+        <hr>
+        
+        <div id="modalDetails"></div>
+        
+        <div id="modalSubActions" style="display: none; margin-bottom: 12px; width: 100%;"></div>
+        
+        <div class="modal-buttons">
+            <button id="btnUpdate" class="modal-btn warning">Update Record</button>
+            <button id="btnDelete" class="modal-btn danger">Delete Record</button>
+            <button id="btnClose"  class="modal-btn cancel">Close</button>
         </div>
     </div>
+</div>
 
 </div><!-- /.wrap -->
 
