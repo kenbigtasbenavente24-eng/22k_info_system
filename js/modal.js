@@ -606,17 +606,172 @@ function ViewOptions(rowDataB64)
 
 // ==== ADD / INSERT MODAL ================================
 
+// ---- Live-search field builder ----
+// Returns { wrapperHtml, bindFn }
+// wrapperHtml : HTML string to inject into the form
+// bindFn(containerId) : call after innerHTML is set to wire up events
+// ---- Unified live-search wirer ----
+// Call AFTER the input/drop/hidden elements already exist in the DOM.
+function wireLiveSearch({ inputId, dropId, hiddenId, searchQuery, onSelect })
+{
+    const input  = document.getElementById(inputId);
+    const hidden = document.getElementById(hiddenId);
+
+    // We ignore dropId entirely — the dropdown is portal-rendered on <body>
+    // to escape any overflow:hidden ancestors in the modal.
+    if (!input || !hidden)
+    {
+        console.warn('wireLiveSearch: element(s) not found', { inputId, hiddenId });
+        return;
+    }
+
+    // Create a floating dropdown portal on <body>
+    const drop = document.createElement('div');
+    drop.id = `portal-drop-${inputId}`;
+    drop.style.cssText = `
+        position: fixed;
+        z-index: 99999;
+        background: #fff;
+        border: 1px solid #cbd5e1;
+        border-top: none;
+        border-radius: 0 0 6px 6px;
+        max-height: 200px;
+        overflow-y: auto;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        display: none;
+        min-width: 200px;
+    `;
+    document.body.appendChild(drop);
+
+    // Position the portal under the input
+    function positionDrop()
+    {
+        const rect        = input.getBoundingClientRect();
+        drop.style.top    = `${rect.bottom}px`;
+        drop.style.left   = `${rect.left}px`;
+        drop.style.width  = `${rect.width}px`;
+    }
+
+    // Clean up portal when modal closes (observe input removal)
+    const observer = new MutationObserver(() => {
+        if (!document.body.contains(input))
+        {
+            drop.remove();
+            observer.disconnect();
+        }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    let debounce;
+    input.addEventListener('input', function ()
+    {
+        hidden.value            = '';
+        input.style.borderColor = '#cbd5e1';
+        clearTimeout(debounce);
+
+        const term = this.value.trim();
+        if (term.length < 1)
+        {
+            drop.innerHTML      = '';
+            drop.style.display  = 'none';
+            return;
+        }
+
+        debounce = setTimeout(async () =>
+        {
+            try
+            {
+                const res  = await fetch(`api/search.php?query=${searchQuery}&term=${encodeURIComponent(term)}`);
+                const json = await res.json();
+                drop.innerHTML = '';
+
+                if (!json.data || json.data.length === 0)
+                {
+                    drop.innerHTML     = '<div class="ls-option no-result" style="padding:8px 12px; font-size:12px; color:#94a3b8; font-style:italic;">No results found</div>';
+                    positionDrop();
+                    drop.style.display = 'block';
+                    return;
+                }
+
+                json.data.forEach(item =>
+                {
+                    const opt       = document.createElement('div');
+                    opt.className   = 'ls-option';
+                    opt.textContent = item.label;
+                    opt.style.cssText = 'padding:8px 12px; font-size:12.5px; color:#334155; cursor:pointer; border-bottom:1px solid #f1f5f9;';
+
+                    opt.addEventListener('mouseover',  () => { opt.style.background = '#f0f9ff'; opt.style.color = '#0369a1'; });
+                    opt.addEventListener('mouseout',   () => { opt.style.background = '';        opt.style.color = '#334155'; });
+                    opt.addEventListener('mousedown',  (e) =>
+                    {
+                        e.preventDefault();
+                        input.value             = item.label;
+                        hidden.value            = item.id;
+                        input.style.borderColor = '#22c55e';
+                        drop.style.display      = 'none';
+                        drop.innerHTML          = '';
+                        if (onSelect) onSelect(item);
+                    });
+
+                    drop.appendChild(opt);
+                });
+
+                positionDrop();
+                drop.style.display = 'block';
+            }
+            catch (err) { console.error('Live search fetch error:', err); }
+        }, 220);
+    });
+
+    input.addEventListener('blur', () =>
+    {
+        setTimeout(() => { drop.style.display = 'none'; }, 180);
+    });
+
+    input.addEventListener('focus', () =>
+    {
+        if (drop.children.length > 0)
+        {
+            positionDrop();
+            drop.style.display = 'block';
+        }
+    });
+
+    // Reposition if window scrolls or resizes while open
+    window.addEventListener('scroll',  positionDrop, true);
+    window.addEventListener('resize',  positionDrop);
+}
+
+
+// ---- Live-search HTML snippet builder (no binding — call wireLiveSearch after DOM insert) ----
+function makeLiveSearchField(inputId, dropId, hiddenId, labelText, placeholder)
+{
+    return `
+        <div class="form-field">
+            <label>${escapeHtml(labelText)}</label>
+            <div class="ls-wrapper">
+                <input
+                    id="${inputId}"
+                    type="text"
+                    placeholder="${escapeHtml(placeholder)}"
+                    autocomplete="off"
+                    style="width:100%; height:36px; padding:0 10px; border:1px solid #cbd5e1;
+                           border-radius:6px; font-size:13px; box-sizing:border-box;"
+                >
+                <div class="ls-dropdown" id="${dropId}" style="display:none;"></div>
+                <input type="hidden" id="${hiddenId}">
+            </div>
+        </div>`;
+}
+
+
 function showAddModal()
 {
     const activeBtn    = document.querySelector('.tab-btn.active');
     const currentTable = activeBtn ? activeBtn.dataset.query : 'customer';
     const fields       = TABLE_INSERT_FIELDS[currentTable];
 
-    if (!fields)
-    {
-        alert(`No insert form defined for table: ${currentTable}`);
-        return;
-    }
+    if (!fields) { alert(`No insert form defined for table: ${currentTable}`); return; }
 
     const modal        = document.getElementById('viewModal');
     const modalTitle   = document.getElementById('modalTitle');
@@ -627,15 +782,33 @@ function showAddModal()
     const isTransactionTable = (currentTable === 'orders' || currentTable === 'purchase');
 
     modalTitle.innerText = `Add New ${currentTable.toUpperCase()} Record`;
+    if (subActions) { subActions.innerHTML = ''; subActions.style.display = 'none'; }
 
-    if (subActions) {
-        subActions.innerHTML = '';
-        subActions.style.display = 'none';
-    }
+    // Track live-search binders that need wiring after innerHTML is set
+    const liveSearchBinders = [];
 
+    // ---- Build main fields ----
     let formHtml = '<div class="update-form">';
     fields.forEach((field, i) =>
     {
+        if (currentTable === 'orders' && field.key === 'Cust_ID')
+        {
+            formHtml += makeLiveSearchField(
+                'ls-input-cust', 'ls-drop-cust', 'hidden-cust-id',
+                'Customer Name', 'Type to search customer...'
+            );
+            return;
+        }
+
+        if (currentTable === 'purchase' && field.key === 'Supply_ID')
+        {
+            formHtml += makeLiveSearchField(
+                'ls-input-supp', 'ls-drop-supp', 'hidden-supp-id',
+                'Supplier Name', 'Type to search supplier...'
+            );
+            return;
+        }
+
         formHtml += `
             <div class="form-field">
                 <label for="add-field-${i}">${escapeHtml(field.label)}</label>
@@ -649,6 +822,7 @@ function showAddModal()
     });
     formHtml += '</div>';
 
+    // ---- Transaction table: item lines section ----
     if (isTransactionTable)
     {
         const modalContent = document.querySelector('#viewModal .modal-content');
@@ -656,57 +830,125 @@ function showAddModal()
         modalContent.style.width    = '95%';
 
         formHtml += `
-            <div style="margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 15px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-                    <h4 style="margin: 0; font-size: 13px; color: #334155; font-weight: 600;">
-                        <i class="fa-solid fa-list-ol" style="margin-right: 4px; color: #64748b;"></i> Item Lines Breakdown
+            <div style="margin-top:20px; border-top:1px solid #e2e8f0; padding-top:15px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+                    <h4 style="margin:0; font-size:13px; color:#334155; font-weight:600;">
+                        <i class="fa-solid fa-list-ol" style="margin-right:4px; color:#64748b;"></i> Item Lines Breakdown
                     </h4>
-                    <button type="button" id="btnAddItemLine" style="height: 26px; padding: 0 10px; background: #2563eb; border: none; border-radius: 6px; font-size: 11.5px; color: #fff; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                    <button type="button" id="btnAddItemLine"
+                        style="height:26px; padding:0 10px; background:#2563eb; border:none; border-radius:6px;
+                               font-size:11.5px; color:#fff; font-weight:500; cursor:pointer;
+                               display:inline-flex; align-items:center; gap:4px;">
                         <i class="fa-solid fa-plus"></i> Add Item Row
                     </button>
                 </div>
-                <div id="itemLinesContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto; padding-right: 2px;"></div>
+                <div id="itemLinesContainer"
+                     style="display:flex; flex-direction:column; gap:8px; max-height:260px; overflow-y:auto; padding-right:2px;">
+                </div>
             </div>`;
     }
 
     modalDetails.style.display = 'block';
     modalDetails.innerHTML     = formHtml;
 
+    // Wire main form live-searches AFTER innerHTML is set
+    if (currentTable === 'orders')
+    {
+        wireLiveSearch({ inputId: 'ls-input-cust', dropId: 'ls-drop-cust', hiddenId: 'hidden-cust-id', searchQuery: 'customer' });
+    }
+    if (currentTable === 'purchase')
+    {
+        wireLiveSearch({ inputId: 'ls-input-supp', dropId: 'ls-drop-supp', hiddenId: 'hidden-supp-id', searchQuery: 'supplier' });
+    }
+
     btnsModal.innerHTML = `
         <button id="btnConfirmAdd" class="modal-btn confirm-add">Confirm Add</button>
         <button id="btnCancelAdd"  class="modal-btn cancel">Cancel</button>
     `;
-
     modal.style.display = 'flex';
 
+    // ---- Item-line row generator ----
+    let lineCounter = 0;
     function generateLineRow()
     {
         const container = document.getElementById('itemLinesContainer');
-        const rowId = 'row_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
-        const targetIdLabel = currentTable === 'orders' ? 'DStock ID' : 'Product ID';
+        const rowId     = `line_row_${++lineCounter}`;
+        const isOrders  = currentTable === 'orders';
+
+        const searchQuery   = isOrders ? 'dstock'  : 'product';
+        const idPlaceholder = isOrders ? 'DStock ID' : 'Product ID';
+        const lsId          = `line_name_${lineCounter}`;
+        const hiddenId      = `line_hidden_id_${lineCounter}`;
+        const priceId       = `line_price_${lineCounter}`;
+        const qtyId         = `line_qty_${lineCounter}`;
 
         const rowDiv = document.createElement('div');
-        rowDiv.id = rowId;
+        rowDiv.id        = rowId;
         rowDiv.className = 'receipt-item-row';
-        rowDiv.style = "display: flex; gap: 8px; align-items: center; background: #f8fafc; padding: 6px; border: 1px solid #e2e8f0; border-radius: 6px;";
-        
+        rowDiv.style     = 'display:flex; gap:8px; align-items:flex-start; background:#f8fafc; padding:8px; border:1px solid #e2e8f0; border-radius:6px;';
+
         rowDiv.innerHTML = `
-            <div style="flex: 2;">
-                <input type="number" class="line-target-id" placeholder="${targetIdLabel}" style="width:100%; height:30px; padding:0 8px; border:1px solid #cbd5e1; border-radius:4px; font-size:12px;" required>
+            <!-- Name live-search (flex: 2.5) -->
+            <div style="flex:2.5; position:relative;">
+                <input
+                    id="ls-input-${lsId}"
+                    type="text"
+                    placeholder="${isOrders ? 'Search Product (DStock)' : 'Search Product'}"
+                    autocomplete="off"
+                    style="width:100%; height:30px; padding:0 8px; border:1px solid #cbd5e1;
+                           border-radius:4px; font-size:12px; box-sizing:border-box;"
+                >
+                <div class="ls-dropdown" id="ls-drop-${lsId}"></div>
+                <input type="hidden" id="${hiddenId}">
             </div>
-            <div style="flex: 1.5;">
-                <input type="number" class="line-qty" placeholder="Qty" min="1" style="width:100%; height:30px; padding:0 8px; border:1px solid #cbd5e1; border-radius:4px; font-size:12px;" required>
+
+            <!-- Qty -->
+            <div style="flex:1;">
+                <input id="${qtyId}" type="number" placeholder="Qty" min="1"
+                    style="width:100%; height:30px; padding:0 8px; border:1px solid #cbd5e1;
+                           border-radius:4px; font-size:12px; box-sizing:border-box;">
             </div>
-            <div style="flex: 2;">
-                <input type="number" class="line-price" placeholder="Unit Price (₱)" step="0.01" min="0" style="width:100%; height:30px; padding:0 8px; border:1px solid #cbd5e1; border-radius:4px; font-size:12px;" required>
+
+            <!-- Unit Price -->
+            <div style="flex:1.5;">
+                <input id="${priceId}" type="number" placeholder="Unit Price (₱)" step="0.01" min="0"
+                    style="width:100%; height:30px; padding:0 8px; border:1px solid #cbd5e1;
+                           border-radius:4px; font-size:12px; box-sizing:border-box;"
+                    ${isOrders ? 'readonly style="width:100%; height:30px; padding:0 8px; border:1px solid #cbd5e1; border-radius:4px; font-size:12px; box-sizing:border-box; background:#f1f5f9; color:#64748b;"' : ''}>
             </div>
-            <button type="button" class="btn-remove-line" style="height:30px; width:32px; background:#fee2e2; border:1px solid #fca5a5; border-radius:4px; color:#b91c1c; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+
+            <!-- Remove -->
+            <button type="button" class="btn-remove-line"
+                style="height:30px; width:32px; flex-shrink:0; background:#fee2e2; border:1px solid #fca5a5;
+                       border-radius:4px; color:#b91c1c; cursor:pointer; display:flex;
+                       align-items:center; justify-content:center; margin-top:0;">
                 <i class="fa-solid fa-trash-can" style="font-size:11px;"></i>
             </button>
         `;
 
-        rowDiv.querySelector('.btn-remove-line').onclick = function() { rowDiv.remove(); };
+        rowDiv.querySelector('.btn-remove-line').onclick = () => rowDiv.remove();
         container.appendChild(rowDiv);
+
+        // Replace everything from "Wire live-search for this row" to the end of generateLineRow()
+        wireLiveSearch({
+            inputId:     `ls-input-${lsId}`,
+            dropId:      `ls-drop-${lsId}`,
+            hiddenId:    hiddenId,
+            searchQuery: searchQuery,
+            onSelect: (item) =>
+            {
+                // Autofill price only for orders (DStock carries Prod_Price)
+                if (isOrders && item.price != null)
+                {
+                    const priceEl = document.getElementById(priceId);
+                    if (priceEl)
+                    {
+                        priceEl.value            = parseFloat(item.price).toFixed(2);
+                        priceEl.style.borderColor = '#22c55e';
+                    }
+                }
+            }
+        });
     }
 
     if (isTransactionTable)
@@ -715,50 +957,76 @@ function showAddModal()
         document.getElementById('btnAddItemLine').onclick = generateLineRow;
     }
 
+    // ---- Close helper ----
     function closeModalAndReset()
     {
         document.querySelector('#viewModal .modal-content').style.maxWidth = '450px';
         modal.style.display = 'none';
     }
 
+    // ---- Confirm Add ----
     document.getElementById('btnConfirmAdd').onclick = async function ()
     {
-        const params = fields.map((field, i) => {
+        // Collect main field params, substituting resolved IDs for live-search fields
+        const params = fields.map((field, i) =>
+        {
+            if (currentTable === 'orders'   && field.key === 'Cust_ID')
+                return document.getElementById('hidden-cust-id').value.trim();
+            if (currentTable === 'purchase' && field.key === 'Supply_ID')
+                return document.getElementById('hidden-supp-id').value.trim();
+
             const input = document.getElementById(`add-field-${i}`);
             return input ? input.value.trim() : '';
         });
 
-        const emptyField = fields.find((_, i) => params[i] === '');
-        if (emptyField)
+        // Validate: live-search fields need a resolved ID (not just typed text)
+        if (currentTable === 'orders' && !document.getElementById('hidden-cust-id').value)
         {
-            alert(`Please fill in: ${emptyField.label}`);
+            alert('Please select a valid Customer from the dropdown.');
+            return;
+        }
+        if (currentTable === 'purchase' && !document.getElementById('hidden-supp-id').value)
+        {
+            alert('Please select a valid Supplier from the dropdown.');
             return;
         }
 
+        const emptyField = fields.find((f, i) =>
+        {
+            if (currentTable === 'orders'   && f.key === 'Cust_ID')   return false;
+            if (currentTable === 'purchase' && f.key === 'Supply_ID') return false;
+            return params[i] === '';
+        });
+        if (emptyField) { alert(`Please fill in: ${emptyField.label}`); return; }
+
+        // Collect + validate item lines
         let linesData = [];
         if (isTransactionTable)
         {
             const rowElements = document.querySelectorAll('.receipt-item-row');
             if (rowElements.length === 0)
             {
-                alert('Transaction aborted: You must include at least 1 item breakdown line.');
+                alert('You must include at least 1 item breakdown line.');
                 return;
             }
 
-            let validationPassed = true;
-            rowElements.forEach(row => {
-                const targetId = row.querySelector('.line-target-id').value.trim();
-                const qty      = row.querySelector('.line-qty').value.trim();
-                const price    = row.querySelector('.line-price').value.trim();
+            let valid = true;
+            rowElements.forEach(row =>
+            {
+                const hiddenInput = row.querySelector('input[type="hidden"]');
+                const qtyInput    = row.querySelector('input[placeholder="Qty"]');
+                const priceInput  = row.querySelector('input[placeholder="Unit Price (₱)"]');
 
-                if (!targetId || !qty || !price) validationPassed = false;
+                const targetId = hiddenInput ? hiddenInput.value.trim() : '';
+                const qty      = qtyInput    ? qtyInput.value.trim()    : '';
+                const price    = priceInput  ? priceInput.value.trim()  : '';
+
+                if (!targetId) { valid = false; alert('Please select a product from the dropdown for all item lines.'); }
+                if (!qty || !price) valid = false;
                 linesData.push({ targetId, qty, price });
             });
 
-            if (!validationPassed) {
-                alert('Please fill out all missing fields inside your item lines.');
-                return;
-            }
+            if (!valid) { alert('Please fill out all fields in your item lines.'); return; }
         }
 
         const result = await runInsert(`insert_${currentTable}`, params);
@@ -769,19 +1037,18 @@ function showAddModal()
 
             if (isTransactionTable)
             {
-                const childQueryKey = currentTable === 'orders' ? 'insert_orderdetail' : 'insert_purchasedetail';
-                for (const line of linesData) {
-                    await runInsert(childQueryKey, [generatedParentId, line.targetId, line.qty, line.price]);
-                }
+                const childKey = currentTable === 'orders' ? 'insert_orderdetail' : 'insert_purchasedetail';
+                for (const line of linesData)
+                    await runInsert(childKey, [generatedParentId, line.targetId, line.qty, line.price]);
             }
 
-            alert(`Record and all item lines posted successfully! (Generated ID: ${generatedParentId}).`);
+            alert(`Record posted successfully! (Generated ID: ${generatedParentId}).`);
             closeModalAndReset();
             runSelect(getActiveQueryName(), 'result-container');
         }
         else
         {
-            alert('Insert transaction failed. Please check backend compatibility validations.');
+            alert('Insert failed. Please check your inputs.');
         }
     };
 
