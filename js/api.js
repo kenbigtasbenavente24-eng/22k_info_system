@@ -30,6 +30,9 @@ async function runSelect(queryName, containerId)
 // Calls runDelete then refreshes the active table.
 async function handleDelete(tableName, primaryId)
 {
+    const confirmed = confirm(`Are you sure you want to delete this ${tableName} record (ID: ${primaryId})? This action cannot be undone.`);
+    if (!confirmed) return;
+    
     const queryName = `delete_${tableName}`;
     const affected  = await runDelete(queryName, [primaryId]);
 
