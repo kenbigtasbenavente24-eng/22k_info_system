@@ -19,126 +19,135 @@
     </div>
 
     <nav class="site-nav">
-        <button class="site-nav-btn active" id="navTables"  onclick="showSection('tables')">
+        <button class="site-nav-btn active" id="navTables"    onclick="showSection('tables')">
             <i class="fa-solid fa-table"></i> Tables
         </button>
-        <button class="site-nav-btn" id="navReports" onclick="showSection('reports')">
+        <button class="site-nav-btn"        id="navReports"   onclick="showSection('reports')">
             <i class="fa-solid fa-chart-bar"></i> Reports
+        </button>
+        <button class="site-nav-btn"        id="navChangelog" onclick="showSection('changelog')">
+            <i class="fa-solid fa-clock-rotate-left"></i> Changelog
         </button>
     </nav>
 </header>
 
 <div class="wrap">
+
+    <!-- ======================== TABLES SECTION ======================== -->
     <div id="section-tables">
         <div class="page-title">
             <h2>Table Records</h2>
             <p>Displays all records from the tables relevant to your requirements.</p>
         </div>
 
-    <div class="search-wrapper">
-        <input type="text" id="search-bar" placeholder="Search in table...">
-        <button id="btn-add"onclick="showAddModal()">
-        <i class="fa-solid fa-plus"></i>    Add Record</button>
-    </div>
+        <div class="search-wrapper">
+            <input type="text" id="search-bar" placeholder="Search in table...">
+            <button id="btn-add" onclick="showAddModal()">
+                <i class="fa-solid fa-plus"></i> Add Record
+            </button>
+        </div>
 
-    <!-- =====================================================
-        SECTION: SELECT
-        Each button calls switchTable() with:
-          1. the button element itself (for active state)
-          2. the query name from $SELECT_QUERIES in queries.php
-        data-query stores the query name so getActiveQueryName()
-        can retrieve it for post-delete/update refresh.
-    ====================================================== -->
-
-    <div class="table-nav">
-        <button class="tab-btn active" data-query="customer"      onclick="switchTable(this, 'customer')">
-            <i class="fa-solid fa-address-book"></i>Customer List</button>
-        <button class="tab-btn"        data-query="supplier"      onclick="switchTable(this, 'supplier')">
-            <i class="fa-solid fa-warehouse"></i>Suppliers</button>
-        <button class="tab-btn"        data-query="orders"        onclick="switchTable(this, 'orders')">
-            <i class="fa-solid fa-shopping-cart"></i>Orders List</button>
+        <div class="table-nav">
+            <button class="tab-btn active" data-query="customer"      onclick="switchTable(this, 'customer')">
+                <i class="fa-solid fa-address-book"></i> Customer List</button>
+            <button class="tab-btn"        data-query="supplier"      onclick="switchTable(this, 'supplier')">
+                <i class="fa-solid fa-warehouse"></i> Suppliers</button>
+            <button class="tab-btn"        data-query="orders"        onclick="switchTable(this, 'orders')">
+                <i class="fa-solid fa-shopping-cart"></i> Orders List</button>
             <button class="tab-btn"        data-query="purchase"      onclick="switchTable(this, 'purchase')">
-            <i class="fa-solid fa-clipboard"></i>Purchase List</button>
-        <button class="tab-btn"        data-query="product"       onclick="switchTable(this, 'product')">
-            <i class="fa-solid fa-box-open"></i>Product Catalog</button>
-        <button class="tab-btn"        data-query="deliverystock" onclick="switchTable(this, 'deliverystock')">
-            <i class="fa-solid fa-truck"></i>Delivery Stock</button>
-    </div>
-
-    <!-- Add more SELECT buttons here, following the same pattern -->
-
-    <!-- =====================================================
-        TABLE OUTPUT
-        renderTable() / runSelect() write into this div.
-    ====================================================== -->
+                <i class="fa-solid fa-clipboard"></i> Purchase List</button>
+            <button class="tab-btn"        data-query="product"       onclick="switchTable(this, 'product')">
+                <i class="fa-solid fa-box-open"></i> Product Catalog</button>
+            <button class="tab-btn"        data-query="deliverystock" onclick="switchTable(this, 'deliverystock')">
+                <i class="fa-solid fa-truck"></i> Delivery Stock</button>
+        </div>
 
         <div id="result-container"></div>
-      </div>
+    </div>
 
+    <!-- ======================== REPORTS SECTION ======================== -->
     <div id="section-reports" style="display:none;">
         <div class="page-title">
             <h2>Data Reports</h2>
             <p>View and export business reports as PDF.</p>
         </div>
- 
-        <!-- Report sub-tabs -->
+
         <div class="table-nav" id="report-nav">
-            <button class="tab-btn active" data-report="report_customer_order_history"  onclick="switchReport(this, 'report_customer_order_history','Customer Order History')">
-                <i class="fa-solid fa-history"></i>Customer Order History</button>
-            <button class="tab-btn" data-report="report_order_item_breakdown" onclick="switchReport(this, 'report_order_item_breakdown','Order Item Breakdown')">
-                <i class="fa-solid fa-box"></i>Order Item Breakdown</button>
-            <button class="tab-btn" data-report="report_supplier_product_catalog" onclick="switchReport(this, 'report_supplier_product_catalog','Supplier Product Catalog')">
-                <i class="fa-solid fa-boxes"></i>Supplier Product Catalog</button>
+            <button class="tab-btn active" data-report="report_customer_order_history"
+                    onclick="switchReport(this, 'report_customer_order_history', 'Customer Order History')">
+                <i class="fa-solid fa-history"></i> Customer Order History</button>
+            <button class="tab-btn" data-report="report_order_item_breakdown"
+                    onclick="switchReport(this, 'report_order_item_breakdown', 'Order Item Breakdown')">
+                <i class="fa-solid fa-box"></i> Order Item Breakdown</button>
+            <button class="tab-btn" data-report="report_supplier_product_catalog"
+                    onclick="switchReport(this, 'report_supplier_product_catalog', 'Supplier Product Catalog')">
+                <i class="fa-solid fa-boxes"></i> Supplier Product Catalog</button>
         </div>
- 
+
         <div class="report-card-wrapper">
-        <div class="report-header">
-            <div>
-                <p class="report-title" id="reportTitle">Customer Order History</p>
-                <p class="report-subtitle" id="reportSubtitle">Loading...</p>
+            <div class="report-header">
+                <div>
+                    <p class="report-title"    id="reportTitle">Customer Order History</p>
+                    <p class="report-subtitle" id="reportSubtitle">Loading...</p>
+                </div>
+                <button class="export-btn" onclick="exportPDF()">
+                    <i class="fa-solid fa-download"></i> Export PDF
+                </button>
             </div>
-            <button class="export-btn" onclick="exportPDF()"><i class="fa-solid fa-download"></i>Export PDF</button>
+            <div id="report-container"></div>
+        </div>
+    </div>
+
+    <!-- ======================== CHANGELOG SECTION ======================== -->
+    <div id="section-changelog" style="display:none;">
+        <div class="page-title">
+            <h2>Changelog</h2>
+            <p>A full history of all additions, updates, and deletions made across all tables.</p>
         </div>
 
-        <div id="report-container"></div>
+        <div class="report-card-wrapper">
+            <div class="report-header">
+                <div>
+                    <p class="report-title">Activity Log</p>
+                    <p class="report-subtitle" id="changelogSubtitle">Loading entries...</p>
+                </div>
+                <button class="export-btn" onclick="exportChangelogPDF()">
+                    <i class="fa-solid fa-download"></i> Export PDF
+                </button>
+            </div>
+            <div id="changelog-container"></div>
+        </div>
     </div>
-</div>
 
-    <!-- =====================================================
-        MODAL: shown when the user clicks "View" on a row.
-        Buttons wire up their handlers inside ViewOptions().
-    ====================================================== -->
-
+    <!-- ======================== MODAL ======================== -->
     <div id="viewModal" class="modal-backdrop" style="display: none;">
-    <div class="modal-content">
-        <h3 id="modalTitle">Record Options</h3>
-        <hr>
-        
-        <div id="modalDetails"></div>
-        
-        <div id="modalSubActions" style="display: none; margin-bottom: 12px; width: 100%;"></div>
-        
-        <div class="modal-buttons">
-            <button id="btnUpdate" class="modal-btn warning">Update Record</button>
-            <button id="btnDelete" class="modal-btn danger">Delete Record</button>
-            <button id="btnClose"  class="modal-btn cancel">Close</button>
+        <div class="modal-content">
+            <h3 id="modalTitle">Record Options</h3>
+            <hr>
+            <div id="modalDetails"></div>
+            <div id="modalSubActions" style="display: none; margin-bottom: 12px; width: 100%;"></div>
+            <div class="modal-buttons">
+                <button id="btnUpdate" class="modal-btn warning">Update Record</button>
+                <button id="btnDelete" class="modal-btn danger">Delete Record</button>
+                <button id="btnClose"  class="modal-btn cancel">Close</button>
+            </div>
         </div>
     </div>
-</div>
 
 </div><!-- /.wrap -->
 
-<!-- 1. Foundations — no dependencies -->
+<!-- 1. Foundations -->
 <script src="js/utils.js"></script>
 <script src="js/api.js"></script>
- 
-<!-- 2. Features — each depends on utils + api -->
+
+<!-- 2. Features -->
 <script src="js/search.js"></script>
 <script src="js/table.js"></script>
 <script src="js/modal.js"></script>
 <script src="js/reports.js"></script>
- 
-<!-- 3. Entry point — fires after everything above is ready -->
+<script src="js/changelog.js"></script>
+
+<!-- 3. Entry point -->
 <script src="js/app.js"></script>
 
 </body>

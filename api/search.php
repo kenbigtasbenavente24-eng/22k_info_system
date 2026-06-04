@@ -4,7 +4,6 @@
 
 header('Content-Type: application/json');
 require_once '../db.php';
-require_once '../queries.php';
 
 $query  = $_GET['query']  ?? '';
 $term   = '%' . trim($_GET['term'] ?? '') . '%';

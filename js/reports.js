@@ -136,23 +136,3 @@ function exportPDF()
     const filename = document.getElementById('reportTitle').textContent.replace(/\s+/g, '_') + '.pdf';
     doc.save(filename);
 }
-
-// Toggles between the Tables section and the Reports section.
-// Auto-loads the first report tab if the container is still empty.
-function showSection(section)
-{
-    const isReports = section === 'reports';
-
-    document.getElementById('section-tables').style.display  = isReports ? 'none'  : 'block';
-    document.getElementById('section-reports').style.display = isReports ? 'block' : 'none';
-
-    document.getElementById('navTables').classList.toggle('active', !isReports);
-    document.getElementById('navReports').classList.toggle('active',  isReports);
-
-    if (isReports)
-    {
-        const firstBtn       = document.querySelector('#report-nav .tab-btn');
-        const containerEmpty = document.getElementById('report-container').innerHTML === '';
-        if (firstBtn && containerEmpty) firstBtn.click();
-    }
-}

@@ -372,11 +372,17 @@ function ViewOptions(rowDataB64)
 
             if (isEdit) {
                 const affected = await runUpdate('update_payment', [method, amount, paymentObj.Pay_ID]);
-                if (affected > 0) alert("Payment updated successfully.");
+                if (affected > 0) { 
+                    writeLog('payment', paymentObj.Pay_ID, `Payment updated for Order ID ${primaryId}`);
+                    alert(`Updated ${affected} row(s) successfully.`);
+                }
                 else alert("Payment layout processed successfully.");
             } else {
                 const result = await runInsert('insert_payment', [primaryId, method, amount]);
-                if (result && result.affected_rows > 0) alert("Payment saved successfully!");
+                if (result && result.affected_rows > 0) { 
+                    writeLog('payment', result.insert_id, `Payment added to Order ID ${primaryId}`);
+                    alert("Payment saved successfully!");
+                }
                 else alert("Failed to save payment.");
             }
 
@@ -439,9 +445,14 @@ function ViewOptions(rowDataB64)
             const affected = await runUpdate(`update_${currentTable}`, params);
 
             if (affected > 0)
+            {
+                await writeLog(currentTable, primaryId, `Record updated in ${currentTable}`);
                 alert(`Updated ${affected} row(s) successfully.`);
+            }
             else
+            {
                 alert('Update failed or no values were changed.');
+            }
 
             modal.style.display = 'none';
             runSelect(getActiveQueryName(), 'result-container');
@@ -1033,6 +1044,7 @@ function showAddModal()
 
         if (result && result.affected_rows > 0)
         {
+            writeLog(currentTable, generatedParentId, `New ${currentTable} record added`); // writes to log with the generated ID from the insert
             const generatedParentId = result.insert_id;
 
             if (isTransactionTable)
